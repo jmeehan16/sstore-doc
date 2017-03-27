@@ -1,8 +1,8 @@
 .. _benchmarks:
 
-****************************
+******************************************
 Writing Applications/Benchmarks in S-Store
-****************************
+******************************************
 
 The most common use of S-Store is the creation of applications, or benchmarks.  S-Store supports benchmarks with both streaming workloads and/or OLTP workloads.  
 
@@ -55,7 +55,7 @@ There are three primary types of state in S-Store applications: Tables, Streams,
 
 .. Note:: Partition keys for tables are defined in the ProjectBuilder class.
 
-**Streams** are the primary method of moving information from one stored procedure to another within a dataflow graph.  While the data is primarily passed through stored procedure arguments, it is important to also store the data in persistent streams as well for recovery purposes.  Streams are logically append and remove only.  For now, it is left to the application developer to prevent any updates to data items in a stream.  An example of a stream is shown below.  
+**Streams** are the primary method of moving information from one stored procedure to another within a dataflow graph.  While the data is primarily passed through stored procedure arguments, it is important to also store the data in persistent streams as well for recovery purposes.  Streams are logically append and remove only.  For now, it is left to the application developer to prevent any updates to data items in a stream.  Stream creation is very similar to table creation. An example of a stream is shown below.  
 
 .. code-block:: sql
 
@@ -63,73 +63,131 @@ There are three primary types of state in S-Store applications: Tables, Streams,
 
 .. Note:: Automatic garbage collection on Streams is left to future functionality.  The application developer should ensure that expired data items within Streams are garbage collected once the tuples are no longer needed (i.e. once the downstream SP has committed).
 
-**Windows** hold a fixed quantity of 
+**Windows** hold a fixed quantity of data that updates as new data arrives.  Windows can be either **tuple-based**, meaning that they always hold a fixed number of tuples, or **batch-based**, meaning that they hold a fixed number of batches at any given time.  Windows update periodically as a specific quantity of tuples or batches arrive.  This is known as the window's **slide** value.
+
+In order to create a window, the user must first create a stream that features the same schema as the window.  This stream must feature two columns to be used by the system, but not by the user: *WSTART* and *WEND*.  Both columns are to be left nullable, and should be of the INTEGER data type.  Aside from defining these columns, the user does not need to be concerned with them.  In the case of batch-based windows, the user must define a third column, *ts*, of the bigint data type.  This column corresponds with the batch-id, and determines when the window slides.  Unlike *WSTART* and *WEND*, the *ts* column must be managed by the user. An example of this base stream is defined below:
+
+.. code-block:: sql
+
+	[example Stream code for windows]
+
+Once the template stream has been defined, the window can be defined based on that.  An example of a tuple-based window is below:
+
+.. code-block:: sql
+
+	[example tuple-based Window definition]
+
+An example of a batch-based window is below:
+
+.. code-block:: sql
+
+	[example batch-based Window definition]
 
 
-Creating windows
-2 types - tuple-based and batch-based
-Create window on stream
-NOTE - windows are separate data structure
-Special columns - nullable
-Tuple-based - nothing special
-Batch-based - required ts column
+It is important to keep in mind that the window is its own separate data structure.  When inserting tuples into a window, they should be directly inserted into the window rather than the base stream.  Additionally, both the *WSTART* and *WEND* columns should be ignored during insert.  An example insert statement is shown below:
 
-Creating SPs
-------------
+.. code-block:: sql
 
-Explanation of what an SP is and how they relate to transactions
+	[example of inserting into windows]
 
-Mandatory arguments
-Part_id - links to partitionNum
-VoltStream - all upstream data passes through VoltStream
-Extra_args - all other arguments that the procedure needs, passed as longs (?)
+Windows slides are handled automatically by the system, as the user would expect.  As new tuples/batches arrive, they are staged behind the scenes until enough tuples/batches arrive to slide the window by the appropriate amount.  Garbage collection is handled automatically, meaning that the user does ever need to manually delete tuples from a window.
 
-Writing SQL statements
+.. Note:: In tuple-based window, no ordering is maintained within tuples in a batch.  This means that if a stored procedure is replayed upon recovery, the result may differ from the original value.  The results will remain consistent with our guarantees, however.
 
-Executing batches of SQL statements
+It is possible to attach an Execution Engine trigger to a window, as described below.  EE triggers execute on each window slide, not necessarily on each tuple insertion.
 
-Return success code
+Creating OLTP Stored Procedures
+-------------------------------
 
-Border SPs vs downstream SPs - statistics on the client side
+The primary unit of execution in S-Store are **stored procedures**.  Each execution of an S-Store stored procedure on an input batch results in a **transaction** with full ACID properties.  The definition of a stored procedure is very similar to that of H-Store Procedures_.  Constant SQL statements are defined and then submitted to the engine with parameters to be executed in batches.  An example of an OLTP stored procedure can be seen below.
 
-Creating a Dataflow Graph
--------------------------
+.. _Procedures: http://hstore.cs.brown.edu/documentation/development/new-benchmark/#storedprocedures
 
-Like most streaming systems, the main method of programming a workload in S-Store is via dataflow graphs.  A dataflow graph in S-Store is a series of Stored Procedures which are connected via streams in a directed acyclic graph.  
+.. code-block:: java
+
+	[example code for OLTP stored procedure]
+
+
+Creating Dataflow Graph Stored Procedures
+------------------------------------------
+
+Like most streaming systems, the main method of programming a workload in S-Store is via **dataflow graphs**.  A dataflow graph in S-Store is a series of stored procedures which are connected via streams in a directed acyclic graph.  
 
 [image of dataflow graph]
 [dataflow graph caption]
 
-Explain how a dataflow works by default
-Each SP triggers downstream SPs by default, even if no data is passed
-Batch ordering
-Exactly-once
+By default, each stored procedure in a dataflow graph executes on each batch that arrives from the input.  When a stored procedure commits on an input batch, the S-Store scheduler automatically triggers a transaction execution of the downstream stored procedure.  For each stored procedure, batch *b* is guaranteed to commit before batch *b+1*, and for each batch, stored procedure *t* is guaranteed to commit before transaction *t+1*.  Each transaction *t* is guaranteed to execute once and only once.  See the scheduler_ section for more details on how this occurs and in what order the transactions will execute.
 
-Describe how to program link stored procedures in a benchmark
-Name the dataflow graph
-Indicate next SP
-Indicate previous SP
+.. Note:: Downstream stored procedures are triggered for each batch, even if no batch is passed downstream.  In this case, it is important that stored procedures be able to handle these empty, or **NULL** tuples, in order to avoid unexpected results.
 
-Missing functionalities
-Unable to fork a dataflow graph
-Unable to merge dataflow sources
+Dataflow graphs are defined within the **dataflow stored procedure** definitions.  At the beginning of each dataflow SP, the user should define several traits within the *toSetDataflowGraph()* function.  The user must define 1) the name of the dataflow graph, 2) the SP immediately preceding this one in the dataflow graph (if any), and 3) the SP immediately following this one (if any).  An example of this for *SP2* as listed below:
 
-Passing Data Along Streams
---------------------------
+.. code-block:: java
 
-Downstream SPs are triggered whether new data is passed or not
+	protected void toSetDataflowGraph() {
+		setDataflowGraphName("D1"); //defines which dataflow graph this proc is a part of
+		addPrevProc("SP1"); //defines the previous SP in the dataflow graph
+		addNextProc("SP3"); //defines the next SP in the dataflow graph
+	}
 
-Stream data is passed via arguments to SP, along with batch_id
+.. Note: At the moment, S-Store only supports linear dataflow graphs.  Functionality to fork a dataflow graph will be provided in the near future, and support for merging branches of a dataflow graph will also be included in a later release.
 
-Two options:
-Pass data
-How to explicitly pass data
-Keep same batch ID
-Data needs to be inserted into a stream table
-Manual deletion of stream data (missing functionality: garbage collection)
+Dataflow stored procedures are required to take in three primary parameters:  
 
-Don’t pass data
-Still use same batchID
-“NULL” tuple - define way of recognizing
-Developer’s job to manage null tuples
-Future functionality - option to skip null tuple SPs, management of NULL tuples
+1. *int* part_id - This parameter will automatically be filled in with the partitionNum ProcInfo parameter set at the beginning of the SP.  It is irrelevant for single-partition S-Store, but will be used in the distributed version.
+2. *VoltStream* spData - This parameter is how stream data is passed from procedure to procedure.
+3. *long[]* extraArgs - Provides a method of adding additional information into the stored procedure.
+
+Passing Data Along Streams using VoltStreams
+--------------------------------------------
+
+Stream data is passed from procedure to procedure using VoltStreams as arguments.  VoltStreams are attached to Stream tables that are defined in the DDL.  The stream tables used must include a *batch_id* column of long data type.
+
+As mentioned in the previous section, downstream stored procedures are activated with every transaction invocation.  This ensures that every SP executes for every batch_id, regardless of whether that batch contains new data that must be processed.
+
+When data is being passed downstream, it must be inserted into a stream database object.  The stream is primarily there for recovery purposes, to ensure that transactions that have not been queued are able to be recovered in the case of failure.  In addition to being stored in the database object, the data must also be explicitly put into a VoltStream using the voltQueueSQLDownStream(SQLStmt, Object...) and voltExecuteSQLDownStream(String) commands.  These operate similarly to the voltQueueSQL() and voltExecuteSQL() commands, but with some important additions.  Below is an example:
+
+.. code-block:: java
+
+	voltQueueSQLDownStream(insertStmt, batch_id, tuple_value);//inserts the current tuple into the output stream
+	voltExecuteSQLDownStream("out_stream");//selects the appropriate output stream for the current procedure
+
+.. Note:: Garbage collection is not currently implemented for stream tables.  Tuples will need to be manually deleted from these tables once the downstream stored procedure has executed on the corresponding batch.
+
+In some cases, downstream stored procedures will need to be executed on a batch_id even when there is no new data to be processed.  In this case, the developer will need to declare a type of "NULL" tuple, and manage a way to recognize these within the system.  One common way of doing this is to define some value that would otherwise never appear, and declare that value to represent a NULL tuple.  It is important that even in the NULL tuple case, the *batch_id* remain the same as the batch that is executing.  An example is shown below:
+
+.. code-block:: java
+
+	voltQueueSQLDownStream(insertStmt, batch_id, null_tuple_value);//inserts a recognized NULL tuple to the output stream, but with the same batch_id
+	voltExecuteSQLDownStream("out_stream");//selects the appropriate output stream for the current procedure
+
+.. Note:: Currently, NULL tuples do require downstream stored procedures to execute, even if no real work is being accomplished.  Future releases of S-Store will include the option to circumvent these additional SP executions as a way of optimizing transaction processing.
+
+Execution Engine Triggers
+-------------------------
+
+**Execution Engine triggers** (also known as **EE triggers** or **backend triggers**) are SQL statements that are attached to tables, windows, or streams. These triggers execute the attached SQL code immediately upon the insertion of a tuple. Note that if a batch of many tuples is inserted with one command, the trigger will fire once for each insertion.
+
+EE triggers are defined in a way that is similar to stored procedures. They are placed in the "procedures" package of the benchmark, and similarly declared within the ProjectBuilder class. Any EE trigger object extends the VoltTrigger class. The stream/window/table to which the trigger is attached must be defined by overriding the "toSetStreamName()" method, which will return the target object name.
+
+.. code-block:: java
+
+	protected String toSetStreamName() {
+		return "s1";
+	}
+
+Each SQL statement that should be run upon tuple insert is then defined. These statements will run sequentially. Usually an "INSERT INTO...SELECT" statement will be used in order to somehow manipulate the data and push it downstream. Here is an example:
+
+.. code-block:: java
+
+	public final SQLStmt thisStmtName = new SQLStmt(
+		"INSERT INTO sometable SELECT * FROM thisstream;"
+	);
+
+EE triggers have different semantics depending on what type of object they are attached to. For streams and tables, the triggers execute the attached SQL code immediately upon the insertion of a tuple. Note that if a batch of many tuples is inserted with one command, the trigger will fire once for each insertion. Tuples are automatically garbage collected once the attached SQL has finished running.
+
+EE triggers attached to windows, however, operate differently. Rather than firing on the insertion of new tuples, the triggers instead fire on the sliding of the window. This is particularly useful for aggregating the contents of a window upon slide and pushing it into a downstream table or stream.
+
+There are some limitations. EE triggers are unable to accept parameterized SQL statements, but both joins and aggregates can be used. Additionally, EE triggers are unable to activate a PE trigger. This means that if a tuple is inserted into a PE trigger stream directly from an EE trigger, the downstream stored procedure will not be activated.
+
+
