@@ -19,25 +19,93 @@ The client consists of two major methods for repeatedly inserting new tuples int
 
 .. code-block:: java
 
-	[example code for runOnce()]
+	protected boolean runOnce() throws IOException {
+
+		Client client = this.getClientHandle();
+    	
+		String tuple = tuple_id + "," + tuple_val; //create tuple, DO NOT include a batch_id
+		String[] curTuples = new String[1];
+		curTuples[0] = tuple;
+		boolean response = client.initStream(callback, "SP1", (Object[]) curTuples);
+		
+		return response;
+	}
 
 The runLoop() method runs as one would expect a loop to: as many times as possible, with no hesitation.  runLoop() is best used with the streamgenerator, as it automatically ingests tuples at whatever rate the streamgenerator is producing them.  The easiest way to code in such a way that both the runOnce() and runLoop() method can be used is to place all of the inner loop code within runOnce(), and then call runOnce() repeatedly from within runLoop(), like so:
 
 .. code-block:: java
 
-	[example code for runLoop()]
+	//to use "runLoop" instead of "runOnce," set the client.txnrate param to -1 at runtime
+	public void runLoop() {
+		try {
+			while (true) {
+				try {
+				runOnce();
+				} catch (Exception e) {
+					failedTuples.incrementAndGet();
+				}
+			} // WHILE
+		} catch (Exception e) { // Client has no clean mechanism for terminating with the DB.
+			e.printStackTrace();
+		}
+	}
 
 As new tuples arrive, it is up to the client to group them into batches.  This is done by creating a String array with a size equal to the maximum number of tuples that you intend to send per batch.  In each iteration of the loop, the runOnce method takes in a new tuple and adds it to a batch.  When an entire batch is ready, that batch is submitted to the system by calling the client.initStream(Callback, ProcName, Tuples) method.  An example of this can be found below.
 
 .. code-block:: java
 
-	[example code for batching]
+	protected boolean runOnce() throws IOException {
+		String tuple = tuple_id + "," + tuple_value; //create tuple, DO NOT include a batch_id
+		curTuples[i++] = tuple;
+		if (BenchmarkConstants.NUM_PER_BATCH == i) { // We have a complete batch now.
+			Client client = this.getClientHandle();
+			boolean response = client.initStream(callback, "SP1", (Object[]) curTuples);
+			i = 0;
+			curTuples = new String[BenchmarkConstants.NUM_PER_BATCH];
+		}
+	}
 
 runOnce()/runLoop() can easily be connected to the StreamGenerator using a clientSocket and BufferedInputStream, as shown below:
 
 .. code-block:: java
 
-	[example code for taking in an ingestion stream]
+	public void runLoop() {
+		Socket clientSocket = null;
+
+		try {
+
+			clientSocket = new Socket(BenchmarkConstants.STREAMINGESTOR_HOST, BenchmarkConstants.STREAMINGESTOR_PORT);
+			clientSocket.setSoTimeout(5000);
+
+			BufferedInputStream in = new BufferedInputStream(clientSocket.getInputStream());
+
+			int i = 0;
+			while (true) {
+				int length = in.read();
+				if (length == -1 || length == 0) {
+					if (i > 0) {
+						Client client = this.getClientHandle();
+						boolean response = client.initStream(callback, "SP1", (Object[]) curTuples);
+						i = 0;
+					}
+					break;
+				}
+				byte[] messageByte = new byte[length];
+				in.read(messageByte);
+				String tuple = new String(messageByte);
+				curTuples[i++] = tuple;
+				if (BenchmarkConstants.NUM_PER_BATCH == i) {
+					// We have a complete batch now.
+					Client client = this.getClientHandle();
+					boolean response = client.initStream(callback, "SP1", (Object[]) curTuples);
+					i = 0;
+					curTuples = new String[BenchmarkConstants.NUM_PER_BATCH];
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
 
 Creating Tables, Windows, and Streams
@@ -51,7 +119,12 @@ There are three primary types of state in S-Store applications: Tables, Streams,
 
 .. code-block:: sql
 	
-	[example Table code]
+	CREATE TABLE T1
+	(
+    	tuple_id	bigint    NOT NULL,
+    	tuple_val	integer   NOT NULL,
+    	CONSTRAINT PK_T1 PRIMARY KEY (tuple_id)
+	);
 
 .. Note:: Partition keys for tables are defined in the ProjectBuilder class.
 
@@ -59,7 +132,12 @@ There are three primary types of state in S-Store applications: Tables, Streams,
 
 .. code-block:: sql
 
-	[example Stream code]
+	CREATE STREAM S1
+	(
+    	tuple_id	bigint    	NOT NULL,
+    	tuple_val	integer   	NOT NULL,
+    	batch_id 	bigint		NOT NULL
+	);
 
 .. Note:: Automatic garbage collection on Streams is left to future functionality.  The application developer should ensure that expired data items within Streams are garbage collected once the tuples are no longer needed (i.e. once the downstream SP has committed).
 
@@ -69,26 +147,36 @@ In order to create a window, the user must first create a stream that features t
 
 .. code-block:: sql
 
-	[example Stream code for windows]
+	CREATE STREAM stream_for_win
+	(
+    	tuple_id 	bigint    	NOT NULL,
+    	tuple_val 	integer    	NOT NULL,
+    	ts 			bigint		NOT NULL,
+    	WSTART		integer,
+    	WEND		integer
+	);
 
 Once the template stream has been defined, the window can be defined based on that.  An example of a tuple-based window is below:
 
 .. code-block:: sql
 
-	[example tuple-based Window definition]
+	CREATE WINDOW tuple_win ON stream_for_win ROWS [*number of rows*] SLIDE [*slide size*];
 
 An example of a batch-based window is below:
 
 .. code-block:: sql
 
-	[example batch-based Window definition]
+	CREATE WINDOW batch_win ON stream_for_win RANGE [*number of batches*] SLIDE [*slide size*];
 
 
 It is important to keep in mind that the window is its own separate data structure.  When inserting tuples into a window, they should be directly inserted into the window rather than the base stream.  Additionally, both the *WSTART* and *WEND* columns should be ignored during insert.  An example insert statement is shown below:
 
-.. code-block:: sql
+.. code-block:: java
 
-	[example of inserting into windows]
+	//insert into window
+	public final SQLStmt insertProcTwoWinStmt = new SQLStmt(
+		"INSERT INTO tuple_win (tuple_id, tuple_val, ts) VALUES (?,?,?);"
+	);
 
 Windows slides are handled automatically by the system, as the user would expect.  As new tuples/batches arrive, they are staged behind the scenes until enough tuples/batches arrive to slide the window by the appropriate amount.  Garbage collection is handled automatically, meaning that the user does ever need to manually delete tuples from a window.
 
@@ -105,7 +193,25 @@ The primary unit of execution in S-Store are **stored procedures**.  Each execut
 
 .. code-block:: java
 
-	[example code for OLTP stored procedure]
+	@ProcInfo(
+		partitionNum = 0; //states which partition this SP runs on
+		singlePartition = true;
+	)
+	public class SP2 extends VoltProcedure {
+		protected void toSetDataflowGraph() { //where dataflow graph details are set
+			addPrevProc("SP1");
+			addNextProc("SP3");
+			setDataflowGraphName("D1");
+		}
+
+		public final SQLStmt temp = "SELECT * FROM S1;" //define SQL statements here
+
+		public long run(int part_id, VoltStream sp1Data, long[] extraArgs) {
+			//procedure work happens here
+
+			return BenchmarkConstants.SUCCESS;
+		}
+	}
 
 
 Creating Dataflow Graph Stored Procedures

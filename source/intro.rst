@@ -7,41 +7,47 @@ Introduction to S-Store
 Quick Start (Dockerized)
 ------------------------
 
-# docker
-1.Command to build the s-store image. 
-Change to the directory containing s-store Dockerfile, and run the fllowing command which install all necessary packages, and compile s-store and prepare the benchmark votersstoreexample by default. 
+The easiest way to build an S-Store instance is using a Docker image.  The biggest advantage to this method is that you do not need to worry about the requirements for S-Store, but instead can run an instance on any system that can run Docker.  To learn more about how to install Docker, visit https://www.docker.com/
+
+1. Clone S-Store from github using the following command:
+
+.. code-block:: bash
+
+	git clone http://github.com/jmeehan16/s-store.git
+
+2. Once you have Docker installed, you will then build the S-Store image. In a terminal, change to the directory that you just cloned S-Store into, and run the following command. This will install all necessary packages, compile S-Store, and prepare the benchmark votersstoreexample by default. 
 
 .. code-block:: bash
 
 	docker build -t s-store ./
 
-2.Command to run s-store image, this command will run the benchmark votersstoreexample and show statistics of the votersstoreexample
+3. Once S-Store has been built, use the following command to run s-store image. This command will run the benchmark votersstoreexample with default parameters and show the statistics of the votersstoreexample.
 
 .. code-block:: bash
 
 	docker run s-store
 
-3.Command to run s-store image with specified benchmark in a non-interactive way
+4. If you wish to run a different benchmark on the S-Store image in a non-interactive way, you can use the following command.
 
 .. code-block:: bash
 
 	docker run s-store /bin/bash -c "service ssh restart && ant sstore-prepare -Dproject={BENCHMARK} && ant sstore-benchmark -Dproject={BENCHMARK}"
 
-4.Command to run s-store in an interactive way
-Open a new terminal:
+4. If you wish to run commands on S-Store in an interactive way, you will need to run two terminals.  In the first terminal, use:
 
 .. code-block:: bash
 
 	docker run -it s-store /bin/bash
 	service ssh restart && ant sstore-prepare -Dproject={BENCHMARK} && ant sstore-benchmark-console -Dproject={BENCHMARK}
 
-Open another terminal. Containers' id can be obtained using command 5
+Then, in a second terminal, you will need to connect to the running container.  The container's ID can be obtained running "docker images"
 
 .. code-block:: bash
 
 	docker exec -it {CONTAINER-ID} ./sstore {BENCHMARK}
 
-5. Some userful commands you might want to use:
+5. Some other useful docker commands that you might want to use:
+
 List all images and detailed information:
 
 .. code-block:: bash
@@ -58,7 +64,7 @@ Check active and inactive containers and obtain containers'id:
 Manual Start (Run on Native Linux)
 ----------------------------------
 
-The S-Store source code can be downloaded from the private Github repository using the following command:
+In order to run The S-Store source code can be downloaded from the Github repository using the following command:
 
 .. code-block:: bash
 
@@ -84,8 +90,8 @@ When running S-Store on a single node, these are the commands you will want to r
 .. code-block:: bash
 
 	ant clean-java build-java
-	ant hstore-prepare $benchmarkname -Dhosts="localhost:0:0"
-	ant hstore-benchmark $benchmarkname $parameters
+	ant sstore-prepare $benchmarkname
+	ant sstore-benchmark $benchmarkname $parameters
 
 Or simply use the included shell script, which will run each command for you:
 
@@ -99,7 +105,13 @@ The runsstorev1.sh shell script uses a number of parameters that are desired by 
 Environmental Parameters
 ------------------------
 
-S-Store adds a number of enviroment parameters to H-Store's base global, client, and site parameters. These are all enabled by default, and most likely you will not need to disable them. They are:
+S-Store adds a number of enviroment parameters to H-Store's base parameters:
+
+GlobalParameters_: http://hstore.cs.brown.edu/documentation/configuration/properties-file/global/
+SiteParameters_: http://hstore.cs.brown.edu/documentation/configuration/properties-file/site/
+ClientParameters_: http://hstore.cs.brown.edu/documentation/configuration/properties-file/client/
+
+There are a few S-Store-specific parameters as well. They are:
 
 **global.sstore**::
 
