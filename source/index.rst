@@ -33,12 +33,12 @@ S-Store is built on top of H-Store, and owes much of our architecture and progra
 A simple example
 -----------------
 
-TPC-DI example here? Voter S-Store Example here?
+Voter S-Store Example here (TBD)
 
 Get the code
 -------------
 
-Git repository link here
+Git repository link here (TBD)
 
 
 Table of Contents
