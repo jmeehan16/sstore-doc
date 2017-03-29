@@ -81,7 +81,7 @@ Native S-Store has the same requirements as its parent system, H-Store.  These a
 
 2. In order to run S-Store, your machine needs to have OpenSSH enabled and you must be allowed to login to localhost without a password:
 
-..code-block:: bash
+.. code-block:: bash
 
 	sudo apt-get --yes install openssh-server
 	ssh-keygen -t rsa # Do not enter a password
@@ -89,7 +89,7 @@ Native S-Store has the same requirements as its parent system, H-Store.  These a
 
 Execute this simple test to make sure everything is set up properly:
 
-..code-block:: bash
+.. code-block:: bash
 
 	ssh -o StrictHostKeyChecking=no localhost "date"
 
