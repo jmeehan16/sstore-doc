@@ -64,7 +64,25 @@ Check active and inactive containers and obtain containers'id:
 Manual Start (Run on Native Linux)
 ----------------------------------
 
-In order to run The S-Store source code can be downloaded from the Github repository using the following command:
+Native S-Store has the same requirements as its parent system, H-Store.  These are:
+
+- gcc/g++ +4.3
+- JDK 1.6/1.7
+- Python +2.7
+- Ant +1.7
+- Valgrind +3.5
+
+1. Install the required packages with the following commands:
+
+.. code-block:: bash
+
+	sudo apt-get update
+	sudo apt-get --yes install subversion gcc g++ openjdk-7-jdk valgrind ant
+
+
+
+
+The S-Store source code can be downloaded from the Github repository using the following command:
 
 .. code-block:: bash
 
