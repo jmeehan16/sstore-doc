@@ -107,34 +107,36 @@ Environmental Parameters
 
 S-Store adds a number of enviroment parameters to H-Store's base parameters:
 
-GlobalParameters_: http://hstore.cs.brown.edu/documentation/configuration/properties-file/global/
-SiteParameters_: http://hstore.cs.brown.edu/documentation/configuration/properties-file/site/
-ClientParameters_: http://hstore.cs.brown.edu/documentation/configuration/properties-file/client/
+- `Global Parameters`_
+- `Site Parameters`_
+- `Client Parameters`_
+
+.. _Global Parameters: http://hstore.cs.brown.edu/documentation/configuration/properties-file/global/
+.. _Site Parameters: http://hstore.cs.brown.edu/documentation/configuration/properties-file/site/
+.. _Client Parameters: http://hstore.cs.brown.edu/documentation/configuration/properties-file/client/
 
 There are a few S-Store-specific parameters as well. They are:
 
-**global.sstore**::
+**global.sstore**:
 
-	Default: true
-	Permitted Type: boolean
-	Enables S-Store and its related functionality.
+- Default: true
+- Permitted Type: boolean
+- Enables S-Store and its related functionality.
 
-**global.sstore_scheduler**::
+**global.sstore_scheduler**:
 
-	Default: true
-	Permitted Type: boolean
-	Enables the serial scheduler, which ensures that when a procedure triggers another procedure, that transaction is scheduled before any other. 
+- Default: true
+- Permitted Type: boolean
+- Enables the serial scheduler, which ensures that when a procedure triggers another procedure, that transaction is scheduled before any other. 
 
-.. Note:: the serial scheduler is designed for workflows that run on a single node. It will be replaced by nested transactions.
+**global.weak_recovery**:
 
-**global.weak_recovery**::
+- Default: true
+- Permitted Type: boolean
+- Enables the weak recovery mechanism, which only logs the "border" stored transactions that exist at the beginning of a workflow.
 
-	Default: true
-	Permitted Type: boolean
-	Enables the weak recovery mechanism, which only logs the "border" stored transactions that exist at the beginning of a workflow.
+**global.sstore_frontend_trigger**:
 
-**global.sstore_frontend_trigger**::
-
-	Default: true
-	Permitted Type: boolean
-	Enables frontend (PE) triggers.
+- Default: true
+- Permitted Type: boolean
+- Enables frontend (PE) triggers.
