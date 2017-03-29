@@ -79,8 +79,21 @@ Native S-Store has the same requirements as its parent system, H-Store.  These a
 	sudo apt-get update
 	sudo apt-get --yes install subversion gcc g++ openjdk-7-jdk valgrind ant
 
+2. In order to run S-Store, your machine needs to have OpenSSH enabled and you must be allowed to login to localhost without a password:
 
+..code-block:: bash
 
+	sudo apt-get --yes install openssh-server
+	ssh-keygen -t rsa # Do not enter a password
+	cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+
+Execute this simple test to make sure everything is set up properly:
+
+..code-block:: bash
+
+	ssh -o StrictHostKeyChecking=no localhost "date"
+
+You should see the date printed without having to put in a password.  If this fails, then check your permissions in the ~/.ssh/ directory.
 
 The S-Store source code can be downloaded from the Github repository using the following command:
 

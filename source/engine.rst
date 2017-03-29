@@ -18,7 +18,7 @@ The scheduler is responsible for ensuring that streaming transactions execute in
 
 Currently, the S-Store scheduler expects to process transactions on *every* stored procedure in the dataflow graph for *every* batch-id that has been assigned.  Because batch-ids are monotonically increasing, there should be no gaps in batch-ids processed by the system.  Additionally, even if one of the stored procedures in the dataflow graph does not necessarily produce output, it is still expected that the SP generate a "NULL" tuple with the same batch-id to push downstream to the next SP.  The reason for this is due to our processing model; even if an SP is processing on a NULL input for a given batch-id, it still may influence state (as is the case in batch-based windows, for instance).  The user should write applications in a way that handles NULL batches properly, as is described in the benchmarks portion of the documentation.
 
-:: Note: In the distributed case, stored procedures are assigned to a specific "home" node for distributed scheduling.  This is future functionality.
+.. Note:: In the distributed case, stored procedures are assigned to a specific "home" node for distributed scheduling.  This is future functionality.
 
 Windows and EE Triggers
 -----------------------
