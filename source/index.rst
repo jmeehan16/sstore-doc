@@ -7,6 +7,18 @@
 S-Store
 #######
 
+.. toctree::
+   :maxdepth: 2
+   :numbered: 
+   :hidden:
+
+   index
+   intro
+   benchmarks
+   engine
+   bigdawg
+   statistics
+
 ********************************
 S-Store Documentation
 ********************************
@@ -40,16 +52,8 @@ Get the code
 
 Git repository link here (TBD)
 
-
 Table of Contents
------------------
+-------------
 
-.. toctree::
-   :maxdepth: 2
-   :numbered: 
 
-   intro
-   benchmarks
-   engine
-   bigdawg
-   statistics
+
