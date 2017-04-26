@@ -11,31 +11,22 @@ The benchmark creation process is very similar to that of H-Store.  To begin cre
 Creating Batches and a Client
 -----------------------------
 
-S-Store executes and orders its dataflow processing in terms of batches.  A batch can be considered a group of one or more tuples that should be executed as a single, atomic unit.  Each batch includes a batch_id, which is associated with the time at which the batch arrived.  These batch_ids are attached to transactions incoming tuples are processed in order.  Batches and batch_ids are currently created on the client side.
+In S-Store (and most streaming system), order of execution is extremely important.  Data must be processed in the order in which it arrives.  S-Store executes and orders its dataflow processing in terms of batches.  A batch can be considered a group of one or more tuples that should be executed as a single, atomic unit.  Each batch includes a batch_id, which is associated with the time at which the batch arrived.  These batch_ids are what ensure that incoming tuples are processed in order.  Batches are currently created on the client side, but the batch_ids are automatically assigned by the engine.
 
 Programming a client is very similar to the process described in the H-Store documentation, but with some key differences.  There are two primary methods of ingesting data from the client to the engine.  The first method, similar to H-Store, is to generate new tuples directly within the client.  This method is best when data is fabricated, as the input rate can easily be controlled at runtime.  The second method is to use the StreamGenerator tool (documented here) to simulate an incoming stream.
 
-The client consists of two major methods for repeatedly inserting new tuples into the engine: the runLoop() method and the runOnce() method.   Within the runOnce() method, the user can define a segment of code that runs x times per second, where x is defined by the -Dclient.txnrate parameter at runtime for each client.  An example can be found below:
+The client consists of two major methods for repeatedly inserting new tuples into : the runLoop() method and the runOnce() method.   Within the runOnce() method, the user can define a segment of code that runs x times per second, where x is defined by the -Dclient.txnrate parameter at runtime for each client.  An example can be found below:
 
 .. code-block:: java
-
-	static AtomicLong batchid = new AtomicLong(0); //monotonically-increasing batchid
-												   //increased when a new batch is created
-	TupleGenerator tuplegenerator = new TupleGenerator(); //custom-designed tuple generator for fabricating new tuples
 
 	protected boolean runOnce() throws IOException {
 
 		Client client = this.getClientHandle();
     	
-		//create a new tuple, with a pre-defined schema
-		Object tuple = tupleGenerator.createNewTuple();
-
-		//asynchronous call for stream procedures
-		boolean response = client.callStreamProcedure(callback, 
-													"SP1", 
-													batchid.getAndIncrement(),
-													tuple.t_id,
-													tuple.t_value);
+		String tuple = tuple_id + "," + tuple_val; //create tuple, DO NOT include a batch_id
+		String[] curTuples = new String[1];
+		curTuples[0] = tuple;
+		boolean response = client.initStream(callback, "SP1", (Object[]) curTuples);
 		
 		return response;
 	}
@@ -59,18 +50,16 @@ The runLoop() method runs as one would expect a loop to: as many times as possib
 		}
 	}
 
-As new tuples arrive, it is up to the client to group them into batches.  This can be done in several ways, but the easiest way is to create a String array with a size equal to the maximum number of tuples that you intend to send per batch.  In each iteration of the loop, the runOnce method takes in a new tuple and adds it to a batch.  When an entire batch is ready, that batch is submitted to the system by calling the client.callStreamProcedure(Callback, ProcName, Batch_Id, Tuples) method.  An example of this can be found below.
+As new tuples arrive, it is up to the client to group them into batches.  This is done by creating a String array with a size equal to the maximum number of tuples that you intend to send per batch.  In each iteration of the loop, the runOnce method takes in a new tuple and adds it to a batch.  When an entire batch is ready, that batch is submitted to the system by calling the client.initStream(Callback, ProcName, Tuples) method.  An example of this can be found below.
 
 .. code-block:: java
-
-	static AtomicLong batchid = new AtomicLong(0);
 
 	protected boolean runOnce() throws IOException {
 		String tuple = tuple_id + "," + tuple_value; //create tuple, DO NOT include a batch_id
 		curTuples[i++] = tuple;
 		if (BenchmarkConstants.NUM_PER_BATCH == i) { // We have a complete batch now.
 			Client client = this.getClientHandle();
-			boolean response = client.callStreamProcedure(callback, "SP1", batchid.getAndIncrement(), (Object[]) curTuples);
+			boolean response = client.initStream(callback, "SP1", (Object[]) curTuples);
 			i = 0;
 			curTuples = new String[BenchmarkConstants.NUM_PER_BATCH];
 		}
@@ -79,8 +68,6 @@ As new tuples arrive, it is up to the client to group them into batches.  This c
 runOnce()/runLoop() can easily be connected to the StreamGenerator using a clientSocket and BufferedInputStream, as shown below:
 
 .. code-block:: java
-
-	static AtomicLong batchid = new AtomicLong(0);
 
 	public void runLoop() {
 		Socket clientSocket = null;
@@ -95,10 +82,10 @@ runOnce()/runLoop() can easily be connected to the StreamGenerator using a clien
 			int i = 0;
 			while (true) {
 				int length = in.read();
-				if (length == -1 || length == 0) { //end of input stream
+				if (length == -1 || length == 0) {
 					if (i > 0) {
 						Client client = this.getClientHandle();
-						boolean response = client.callStreamProcedure(callback, "SP1", batchid.getAndIncrement(), (Object[]) curTuples);
+						boolean response = client.initStream(callback, "SP1", (Object[]) curTuples);
 						i = 0;
 					}
 					break;
@@ -110,7 +97,7 @@ runOnce()/runLoop() can easily be connected to the StreamGenerator using a clien
 				if (BenchmarkConstants.NUM_PER_BATCH == i) {
 					// We have a complete batch now.
 					Client client = this.getClientHandle();
-					boolean response = client.callStreamProcedure(callback, "SP1", batchid.getAndIncrement(), (Object[]) curTuples);
+					boolean response = client.initStream(callback, "SP1", (Object[]) curTuples);
 					i = 0;
 					curTuples = new String[BenchmarkConstants.NUM_PER_BATCH];
 				}
@@ -156,7 +143,7 @@ There are three primary types of state in S-Store applications: Tables, Streams,
 
 **Windows** hold a fixed quantity of data that updates as new data arrives.  Windows can be either **tuple-based**, meaning that they always hold a fixed number of tuples, or **batch-based**, meaning that they hold a fixed number of batches at any given time.  Windows update periodically as a specific quantity of tuples or batches arrive.  This is known as the window's **slide** value.
 
-In order to create a window, the user must first create a stream that features the same schema as the window.  This stream must feature two columns to be used by the system, but not by the user: *WSTART* and *WEND*.  Both columns are to be left nullable, and should be of the INTEGER data type.  Aside from defining these columns, the user does not need to be concerned with them.  In the case of batch-based windows, the user must define a third column, *ts*, of the bigint data type.  This column corresponds with the batch-id, and determines when the window slides.  Unlike *WSTART* and *WEND*, the *ts* column must be managed by the user, and should be used as though it were a *batch_id* column. An example of this base stream is defined below:
+In order to create a window, the user must first create a stream that features the same schema as the window.  This stream must feature two columns to be used by the system, but not by the user: *WSTART* and *WEND*.  Both columns are to be left nullable, and should be of the INTEGER data type.  Aside from defining these columns, the user does not need to be concerned with them.  In the case of batch-based windows, the user must define a third column, *ts*, of the bigint data type.  This column corresponds with the batch-id, and determines when the window slides.  Unlike *WSTART* and *WEND*, the *ts* column must be managed by the user. An example of this base stream is defined below:
 
 .. code-block:: sql
 
@@ -211,34 +198,16 @@ The primary unit of execution in S-Store are **stored procedures**.  Each execut
 		singlePartition = true;
 	)
 	public class SP2 extends VoltProcedure {
-		protected void toSetTriggerTableName()
-		{
-			addTriggerTable("proc_one_out");
+		protected void toSetDataflowGraph() { //where dataflow graph details are set
+			addPrevProc("SP1");
+			addNextProc("SP3");
+			setDataflowGraphName("D1");
 		}
 
-		public final SQLStmt getInputStream = "SELECT t_id, t_val, batch_id FROM proc_one_out;" //define SQL statements here
-
-		public final SQLStmt deleteInputStream = "DELETE * FROM proc_one_out;"
-
-		public final SQLStmt insertOutputStream = "INSERT INTO proc_two_out (t_id, t_val, batch_id) VALUES (?,?,?);" //parameterized insert
+		public final SQLStmt temp = "SELECT * FROM S1;" //define SQL statements here
 
 		public long run(int part_id, VoltStream sp1Data, long[] extraArgs) {
 			//procedure work happens here
-			voltQueueSQL(getInputStream); //get tuples from the stream
-			voltQueueSQL(deleteInputStream); //manually remove tuples from the stream
-			VoltTable response = voltExecuteSQL(); //returns results as an array of VoltTables
-
-			//iterates through all rows of the response to the first query
-			for(int i = 0; i < response[0].getRowCount()) {
-				VoltTableRow row = response[0].fetchRow(i); //get the next row
-				long t_id = row.getLong("t_id"); 
-				int t_val = (int)row.getLong("t_val"); //integer is not an option, use "long" and cast
-				long batch_id = row.getLong("batch_id");
-
-				//insert tuple into downstream
-				voltQueueSQL(insertOutputStream, t_id, t_val+10, batch_id);
-				voltExecuteSQL();
-			}
 
 			return BenchmarkConstants.SUCCESS;
 		}
