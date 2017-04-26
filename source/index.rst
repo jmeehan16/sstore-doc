@@ -18,6 +18,7 @@ S-Store
    engine
    bigdawg
    statistics
+   features
 
 ********************************
 S-Store Documentation
@@ -45,7 +46,9 @@ S-Store is built on top of H-Store, and owes much of our architecture and progra
 A simple example
 -----------------
 
-Voter S-Store Example here (TBD)
+S-Store comes with a number of benchmarks, including a simple streaming example meant to showcase the functionalities of S-Store.  This benchmark, votersstoreexample, mimics an online voting competition in which the audience votes for their favorite contestant, a sliding window is generated of the current leaderboard, and periodically, based on who has the least votes in that moment, a contestant is removed from the running.
+
+This workload can be broken down into three stored procedures: Vote (collect the audience's votes), Generate Leaderboard (update the sliding window), and Delete Contestant (remove the lowest contestant every X votes).  
 
 Get the code
 -------------

@@ -4,21 +4,25 @@
 Connecting S-Store to BigDAWG
 *****************************
 
-Quick Start (Dockerized)
-------------------------
+Coming Soon
 
-Manual Setup
-------------
 
-Querying through BigDAWG/JDBC
------------------------------
+..
+	Quick Start (Dockerized)
+	------------------------
 
-Migrating data from S-Store to Postgres
----------------------------------------
+	Manual Setup
+	------------
 
-Migrating data to S-Store from Postgres
----------------------------------------
+	Querying through BigDAWG/JDBC
+	-----------------------------
 
-Migrating via CSV
------------------
+	Migrating data from S-Store to Postgres
+	---------------------------------------
+
+	Migrating data to S-Store from Postgres
+	---------------------------------------
+
+	Migrating via CSV
+	-----------------
 

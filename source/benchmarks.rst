@@ -6,7 +6,10 @@ Writing Applications/Benchmarks in S-Store
 
 The most common use of S-Store is the creation of applications, or benchmarks.  S-Store supports benchmarks with both streaming workloads and/or OLTP workloads.  
 
-The benchmark creation process is very similar to that of H-Store.  To begin creating a benchmark, please follow the instructions in the H-Store documentation, linked here.  While the core benchmark pieces, such as the schema, stored procedures, project builder, and client are fundamentally the same, there are some important differences between an S-Store workload that features dataflow graphs and an H-Store OLTP workload.  These differences are listed below.
+Creating a New Benchmark
+------------------------
+
+To begin creating a benchmark, please follow the instructions in the H-Store documentation, linked `here <http://hstore.cs.brown.edu/documentation/development/new-benchmark/>`_.  While the core benchmark pieces, such as the schema, stored procedures, project builder, and client are fundamentally the same, there are some important differences between an S-Store workload that features dataflow graphs and an H-Store OLTP workload.  These differences are listed below.
 
 Creating Batches and a Client
 -----------------------------
@@ -216,24 +219,31 @@ The primary unit of execution in S-Store are **stored procedures**.  Each execut
 			addTriggerTable("proc_one_out");
 		}
 
-		public final SQLStmt getInputStream = "SELECT t_id, t_val, batch_id FROM proc_one_out;" //define SQL statements here
+		public final SQLStmt getBatchId = "SELECT batch_id FROM proc_one_out ORDER BY batch_id LIMIT 1";
 
-		public final SQLStmt deleteInputStream = "DELETE * FROM proc_one_out;"
+		public final SQLStmt getInputStream = "SELECT t_id, t_val FROM proc_one_out WHERE batch_id = ?;"; //define SQL statements here
 
-		public final SQLStmt insertOutputStream = "INSERT INTO proc_two_out (t_id, t_val, batch_id) VALUES (?,?,?);" //parameterized insert
+		public final SQLStmt deleteInputStream = "DELETE * FROM proc_one_out WHERE batch_id = ?;";
 
-		public long run(int part_id, VoltStream sp1Data, long[] extraArgs) {
+		public final SQLStmt insertOutputStream = "INSERT INTO proc_two_out (t_id, t_val, batch_id) VALUES (?,?,?);"; //parameterized insert
+
+		//the part of the stored procedure that actually runs on execution
+		public long run(int part_id) {
+
+			voltQueueSQL(getBatchId);
+			VoltTable response = voltExecuteSQL();
+			long batch_id = response[0].fetchRow(0).getLong("batch_id");
+
 			//procedure work happens here
-			voltQueueSQL(getInputStream); //get tuples from the stream
-			voltQueueSQL(deleteInputStream); //manually remove tuples from the stream
-			VoltTable response = voltExecuteSQL(); //returns results as an array of VoltTables
+			voltQueueSQL(getInputStream, batch_id); //get tuples from the stream for the given batch_id
+			voltQueueSQL(deleteInputStream, batch_id); //manually remove tuples from the stream
+			response = voltExecuteSQL(); //returns results as an array of VoltTables
 
 			//iterates through all rows of the response to the first query
 			for(int i = 0; i < response[0].getRowCount()) {
 				VoltTableRow row = response[0].fetchRow(i); //get the next row
 				long t_id = row.getLong("t_id"); 
 				int t_val = (int)row.getLong("t_val"); //integer is not an option, use "long" and cast
-				long batch_id = row.getLong("batch_id");
 
 				//insert tuple into downstream
 				voltQueueSQL(insertOutputStream, t_id, t_val+10, batch_id);
@@ -244,61 +254,63 @@ The primary unit of execution in S-Store are **stored procedures**.  Each execut
 		}
 	}
 
+There are a few things to note in this simple SP example.  First of all, the run(int part_id) method is standard, and should be included in every streaming SP.  The part_id parameter automatically uses the partitionNum, which is set in the @ProcInfo block at the top of the SP.
 
-Creating Dataflow Graph Stored Procedures
-------------------------------------------
+Again, currently stream maintenance is handled by the developer.  It is very important that the developer at the minimum 1) pull the most recent information from the input stream, 2) delete the same info from the input stream, and 3) insert new stream information into the output stream, if necessary.  Because single-node S-Store 
+
+
+Creating Dataflow Graph Stored Procedures (Partition Engine Triggers)
+---------------------------------------------------------------------
 
 Like most streaming systems, the main method of programming a workload in S-Store is via **dataflow graphs**.  A dataflow graph in S-Store is a series of stored procedures which are connected via streams in a directed acyclic graph.  
 
 [image of dataflow graph]
 [dataflow graph caption]
 
-By default, each stored procedure in a dataflow graph executes on each batch that arrives from the input.  When a stored procedure commits on an input batch, the S-Store scheduler automatically triggers a transaction execution of the downstream stored procedure.  For each stored procedure, batch *b* is guaranteed to commit before batch *b+1*, and for each batch, stored procedure *t* is guaranteed to commit before transaction *t+1*.  Each transaction *t* is guaranteed to execute once and only once.  See the scheduler_ section for more details on how this occurs and in what order the transactions will execute.
+By default, each stored procedure in a dataflow graph executes on each batch that arrives from the input.  When a stored procedure commits on an input batch, the S-Store scheduler automatically triggers a transaction execution of the downstream stored procedure.  For each stored procedure, batch *b* should commit before batch *b+1*, and for each batch, stored procedure *t* is guaranteed to commit before transaction *t+1*.  See the engine_ section for more details on how this occurs and in what order the transactions will execute.
 
-.. Note:: Downstream stored procedures are triggered for each batch, even if no batch is passed downstream.  In this case, it is important that stored procedures be able to handle these empty, or **NULL** tuples, in order to avoid unexpected results.
-
-Dataflow graphs are defined within the **dataflow stored procedure** definitions.  At the beginning of each dataflow SP, the user should define several traits within the *toSetDataflowGraph()* function.  The user must define 1) the name of the dataflow graph, 2) the SP immediately preceding this one in the dataflow graph (if any), and 3) the SP immediately following this one (if any).  An example of this for *SP2* as listed below:
+Dataflow graphs are defined as a series of triggering procedures, which are defined in each individual SP of the graph.  At the beginning of each dataflow SP, the user should define what input stream triggers this particular SP within the *toSetTriggerTableName()* function.  An example of this for *SP2* as listed below:
 
 .. code-block:: java
 
-	protected void toSetDataflowGraph() {
-		setDataflowGraphName("D1"); //defines which dataflow graph this proc is a part of
-		addPrevProc("SP1"); //defines the previous SP in the dataflow graph
-		addNextProc("SP3"); //defines the next SP in the dataflow graph
+	protected void toSetTriggerTableName() {
+		addTriggerTable("proc_one_out"); //defines which stream will trigger this procedure, as a tuple is inserted into it
 	}
 
-.. Note: At the moment, S-Store only supports linear dataflow graphs.  Functionality to fork a dataflow graph will be provided in the near future, and support for merging branches of a dataflow graph will also be included in a later release.
+.. Note: If multiple tuples are inserted within a single transaction (as is the case in a multiple-tuple batch), only a single downstream trigger invocation will result.
 
-Dataflow stored procedures are required to take in three primary parameters:  
+Dataflow stored procedures are required to take in a single parameter: 
 
-1. *int* part_id - This parameter will automatically be filled in with the partitionNum ProcInfo parameter set at the beginning of the SP.  It is irrelevant for single-partition S-Store, but will be used in the distributed version.
-2. *VoltStream* spData - This parameter is how stream data is passed from procedure to procedure.
-3. *long[]* extraArgs - Provides a method of adding additional information into the stored procedure.
+*int* part_id - This parameter will automatically be filled in with the partitionNum ProcInfo parameter set at the beginning of the SP.  It is irrelevant for single-partition S-Store, but will be used in the distributed version.
 
 Passing Data Along Streams using VoltStreams
 --------------------------------------------
 
-Stream data is passed from procedure to procedure using VoltStreams as arguments.  VoltStreams are attached to Stream tables that are defined in the DDL.  The stream tables used must include a *batch_id* column of long data type.
+Stream data is passed from procedure to procedure using VoltStreams as arguments.  VoltStreams are attached to Stream tables that are defined in the DDL.  The stream tables used should include a *batch_id* column of long data type, in addition to whatever other schema is required.
 
 As mentioned in the previous section, downstream stored procedures are activated with every transaction invocation.  This ensures that every SP executes for every batch_id, regardless of whether that batch contains new data that must be processed.
 
-When data is being passed downstream, it must be inserted into a stream database object.  The stream is primarily there for recovery purposes, to ensure that transactions that have not been queued are able to be recovered in the case of failure.  In addition to being stored in the database object, the data must also be explicitly put into a VoltStream using the voltQueueSQLDownStream(SQLStmt, Object...) and voltExecuteSQLDownStream(String) commands.  These operate similarly to the voltQueueSQL() and voltExecuteSQL() commands, but with some important additions.  Below is an example:
+When data is being passed downstream, it must be inserted into a stream database object.  The downstream transaction should then find the earliest batch_id in the stream, and use that to read the batch from the same stream database object.  It should then manually perform garbage collection on the batch.  The SQL statements required for this are shown below.
 
 .. code-block:: java
 
-	voltQueueSQLDownStream(insertStmt, batch_id, tuple_value);//inserts the current tuple into the output stream
-	voltExecuteSQLDownStream("out_stream");//selects the appropriate output stream for the current procedure
+	public final SQLStmt getBatchId = "SELECT batch_id FROM proc_one_out ORDER BY batch_id LIMIT 1";
+	public final SQLStmt getInputStream = "SELECT t_id, t_val FROM proc_one_out WHERE batch_id = ?;";
+	public final SQLStmt deleteInputStream = "DELETE * FROM proc_one_out WHERE batch_id = ?;";
 
-.. Note:: Garbage collection is not currently implemented for stream tables.  Tuples will need to be manually deleted from these tables once the downstream stored procedure has executed on the corresponding batch.
-
-In some cases, downstream stored procedures will need to be executed on a batch_id even when there is no new data to be processed.  In this case, the developer will need to declare a type of "NULL" tuple, and manage a way to recognize these within the system.  One common way of doing this is to define some value that would otherwise never appear, and declare that value to represent a NULL tuple.  It is important that even in the NULL tuple case, the *batch_id* remain the same as the batch that is executing.  An example is shown below:
+Then, those SQL statements can be executed in batches, using the following commands:
 
 .. code-block:: java
 
-	voltQueueSQLDownStream(insertStmt, batch_id, null_tuple_value);//inserts a recognized NULL tuple to the output stream, but with the same batch_id
-	voltExecuteSQLDownStream("out_stream");//selects the appropriate output stream for the current procedure
+	voltQueueSQL(getBatchId);
+	VoltTable response = voltExecuteSQL();
+	long batch_id = response[0].fetchRow(0).getLong("batch_id"); //finds the batch_id value
 
-.. Note:: Currently, NULL tuples do require downstream stored procedures to execute, even if no real work is being accomplished.  Future releases of S-Store will include the option to circumvent these additional SP executions as a way of optimizing transaction processing.
+	voltQueueSQL(getInputStream, batch_id);
+	voltQueueSQL(deleteInputStream, batch_id);
+	response = voltExecuteSQL();
+
+.. Note:: Garbage collection is not currently implemented for stream tables.  Tuples can be removed from the stream in the same transaction that is reading from it, as the transactions are guaranteed to either fully commit or rollback.
 
 Execution Engine Triggers
 -------------------------
