@@ -15,6 +15,7 @@ Below is a list of supported features in S-Store.  All features are directly imp
 - OLTP transactions: **SUPPORTED**
 - Nested transactions: **LIMITED SUPPORT - SCHEDULER SERIALIZES TXNS**
 - Stream garbage collection: **MANUALLY WRITTEN IN APPLICATIONS**
+- Distributed S-Store: **FUTURE RELEASE**
 
 **WINDOWS:**
 
