@@ -12,7 +12,7 @@ To install the Stream Generator, navigate to the tools/streamgenerator directory
 
 	mvn install
 
-..Note:: You will need to install mvn if you have not already.
+.. Note:: You will need to install mvn if you have not already.
 
 To use the Stream Generator, it is recommended that you use the "stream-generator-v1-jar-with-dependencies.jar."  A typical use looks like this:
 
@@ -28,6 +28,6 @@ The parameters:
 - **-p <port>:** the port that the stream data will be sent to
 - **-m <maxtuples>:** the maximum number of tuples that the streamgenerator will send
 
-..Note:: The application/benchmark will need to be configured to receive tuples from the streamgenerator, and the benchmark configuration run with the setting "-Dclient.txnrate=-1" in order to receive as many tuples as possible from the stream.
+.. Note:: The application/benchmark will need to be configured to receive tuples from the streamgenerator, and the benchmark configuration run with the setting "-Dclient.txnrate=-1" in order to receive as many tuples as possible from the stream.
 
-..Note:: Batch-ids are assigned in the client and should not be pre-assigned by the streamgenerator.
+.. Note:: Batch-ids are assigned in the client and should not be pre-assigned by the streamgenerator.
