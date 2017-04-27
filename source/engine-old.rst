@@ -7,14 +7,16 @@ S-Store Engine
 Batching
 --------
 
-S-Store dataflow graphs process all tuples in atomic batches, which have been defined by the client.  These batches can have zero, one, or several tuples.  Batch-ids are assigned by the client, attached to the input tuples, and sent to the engine with the transaction request.
+S-Store dataflow graphs process all tuples in atomic batches, which have been defined by the client.  These batches can have zero, one, or several tuples.  While the batches themselves are defined in the client and the benchmark, they are inititialized with a NULL batch-id.  Batch-ids are then assigned by the engine upon arrival within the SStoreScheduler.
+
+When querying a VoltStream that has been passed as an SP parameter, the batch-id of the stream can be determined by using [voltstreamname].getBatchId()
 
 Scheduler
 ---------
 
 The scheduler is responsible for ensuring that streaming transactions execute in the proper order.  For each stored procedure, earlier batches are guaranteed to execute before later ones.  For each batch, earlier stored procedures (in the dataflow graph) are guaranteed to execute before the later ones.  The scheduler is also responsible for ensuring that each transaction executes once and only once.
 
-In single-node S-Store, there is no opportunity for parallelism in transactions, and thus all dataflow graphs are executed serially.  This means that when one SP executes on batch B, the next SP in the dataflow graph will then immediately execute on the same batch B before any other streaming transaction occurs.  This has the added benefit of serving a similar purpose to nested transactions, as it prevents other transactions from accessing the state until a batch has completely executed within the dataflow graph.
+Currently, the S-Store scheduler expects to process transactions on *every* stored procedure in the dataflow graph for *every* batch-id that has been assigned.  Because batch-ids are monotonically increasing, there should be no gaps in batch-ids processed by the system.  Additionally, even if one of the stored procedures in the dataflow graph does not necessarily produce output, it is still expected that the SP generate a "NULL" tuple with the same batch-id to push downstream to the next SP.  The reason for this is due to our processing model; even if an SP is processing on a NULL input for a given batch-id, it still may influence state (as is the case in batch-based windows, for instance).  The user should write applications in a way that handles NULL batches properly, as is described in the benchmarks portion of the documentation.
 
 .. Note:: In the distributed case, stored procedures are assigned to a specific "home" node for distributed scheduling.  This is future functionality.
 

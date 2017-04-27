@@ -15,7 +15,7 @@ The easiest way to build an S-Store instance is using a Docker image.  The bigge
 
 	git clone http://github.com/jmeehan16/s-store.git
 
-2. Once you have Docker installed, you will then build the S-Store image. In a terminal, change to the directory that you just cloned S-Store into, and run the following command. This will install all necessary packages, compile S-Store, and prepare the benchmark votersstoreexample by default. 
+2. Once you have Docker installed, you can then build the S-Store image. In a terminal, change to the directory that you just cloned S-Store into, and run the following command. This will install all necessary packages, compile S-Store, and prepare the benchmark votersstoreexample by default. 
 
 .. code-block:: bash
 
@@ -33,6 +33,8 @@ The easiest way to build an S-Store instance is using a Docker image.  The bigge
 
 	docker run s-store /bin/bash -c "service ssh restart && ant sstore-prepare -Dproject={BENCHMARK} && ant sstore-benchmark -Dproject={BENCHMARK}"
 
+.. Note:: A good example benchmark to begin is votersstoreexample, which highlights the functionalities available in S-Store.
+
 4. If you wish to run commands on S-Store in an interactive way, you will need to run two terminals.  In the first terminal, use:
 
 .. code-block:: bash
@@ -45,6 +47,8 @@ Then, in a second terminal, you will need to connect to the running container.  
 .. code-block:: bash
 
 	docker exec -it {CONTAINER-ID} ./sstore {BENCHMARK}
+
+Once connected to this second terminal, you can run SQL statements in order to query the database.  There are also a variety of _statistics tools available as well.
 
 5. Some other useful docker commands that you might want to use:
 
