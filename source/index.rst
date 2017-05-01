@@ -12,8 +12,8 @@ S-Store
    :numbered: 
    :hidden:
 
-   index
    intro
+   deploy
    benchmarks
    engine
    bigdawg
@@ -60,9 +60,6 @@ Get the code
 -------------
 
 Git repository link here (TBD)
-
-Table of Contents
--------------
 
 
 

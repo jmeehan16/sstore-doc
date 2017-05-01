@@ -4,174 +4,55 @@
 Introduction to S-Store
 ****************************
 
-Quick Start (Dockerized)
-------------------------
+What is S-Store?
+----------------
 
-The easiest way to build an S-Store instance is using a Docker image.  The biggest advantage to this method is that you do not need to worry about the requirements for S-Store, but instead can run an instance on any system that can run Docker.  To learn more about how to install Docker, visit https://www.docker.com/
+S-Store is the world's first streaming OLTP engine, which seeks to seemlessly combine online transactional processing with push-based stream processing for real-time applications.  We accomplish this by designing our workloads as dataflow graphs of transactions, pushing the output of one transaction to the input of the next.
 
-1. Clone S-Store from github using the following command:
+S-Store provides three fundamental guarantees, which together are found in no other system:
 
-.. code-block:: bash
+1) **ACID** - All updates to state are accomplished within ACID transactions
 
-	git clone http://github.com/jmeehan16/s-store.git
+2) **Ordering** - S-Store executes on batches of data items, and ensures that batches are processed in an order consistent with their arrival.
 
-2. Once you have Docker installed, you can then build the S-Store image. In a terminal, change to the directory that you just cloned S-Store into, and run the following command. This will install all necessary packages, compile S-Store, and prepare the benchmark votersstoreexample by default. 
+3) **Exactly-once** - All operations are performed on data items once and only once, even in the event of failure
 
-.. code-block:: bash
+S-Store is designed for a variety of streaming use cases that involve shared mutable state, including real-time data ingestion, heartrate waveform analysis, and bicycle sharing applications, to name a few.
 
-	docker build -t s-store ./
+Transaction Model
+-----------------
 
-3. Once S-Store has been built, use the following command to run s-store image. This command will run the benchmark votersstoreexample with default parameters and show the statistics of the votersstoreexample.
+Like most streaming systems, S-Store models its workflows as a dataflow graph, a directed acyclic graph of operations.  Much like OLTP systems such as H-Store, operations in S-Store are modeled as stored procedures (SP).  Incoming tuples are grouped into batches, each of which must be executed as one atomic unit and ordered according to their arrival time.  When a stored procedure executes one of these batches, it creates a transaction execution (TE).  Transaction executions are fully ACID in their semantics, meaning that any state they touch are protected during execution and all changes are either committed or rolled back together.
 
-.. code-block:: bash
+In addition to these ACID semantics, S-Store ensures that each batch is executed in order according to their batch-ids.  For each stored procedure, a transaction execution of batch-id B is guaranteed to commit before the TE of batch-id B+1.  Similarly, for each batch-id B, stored procedure N is guaranteed to execute before stored procedure N+1, where N+1 is the next stored procedure downstream.  Each of these TEs is executed once and only once, even in the event of a failure.
 
-	docker run s-store
+To learn more about applications, the transaction model, and design of S-Store, please read our publications at `sstore.cs.brown.edu <https://sstore.cs.brown.edu/about.html>`_.
 
-4. If you wish to run a different benchmark on the S-Store image in a non-interactive way, you can use the following command.
+Architecture
+------------
 
-.. code-block:: bash
+S-Store is built on top of H-Store, a distributed main-memory OLTP database.  You can read more about H-Store `here <https://hstore.cs.brown.edu>`_.  S-Store adds a number of streaming constructs to H-Store, including:
 
-	docker run s-store /bin/bash -c "service ssh restart && ant sstore-prepare -Dproject={BENCHMARK} && ant sstore-benchmark -Dproject={BENCHMARK}"
+**Streams** - Append/delete data structures (queues) that push data from one piece of processing to another.  Streams allow data to be passed from one SP to another in a dataflow graph.
 
-.. Note:: A good example benchmark to begin is votersstoreexample, which highlights the functionalities available in S-Store.
+**Windows** - Shifting materialized views that display a fixed quantity of data and shift as new data arrives.  Windows can be either **tuple-based** (hold a fixed number of tuples) or **batch-based** (hold a fixed number of batches).  Each window contains a **slide** value, which indicates how frequently it updates (again, in terms of tuples or batches).
 
-4. If you wish to run commands on S-Store in an interactive way, you will need to run two terminals.  In the first terminal, use:
+**Partition-Engine Triggers** - Also known as PE triggers, these are attached to streams such that they trigger transactions of downstream stored procedures, allowing for push-based dataflow graphs.
 
-.. code-block:: bash
+**Execution-Engine Triggers** - Also known as EE triggers, these are SQL statements attached to either windows or streams that execute when specific conditions are met (when new tuples are inserted for streams, and when the window slides in the case of windows).
 
-	docker run -it s-store /bin/bash
-	service ssh restart && ant sstore-prepare -Dproject={BENCHMARK} && ant sstore-benchmark-console -Dproject={BENCHMARK}
+At the moment, S-Store operates in single-node mode only, which means that there is no opportunity for parallelism.  The S-Store scheduler currently executes batches completely serially, meaning that an entire batch is processed to completion within the context of a dataflow graph before the next batch is started.
 
-Then, in a second terminal, you will need to connect to the running container.  The container's ID can be obtained running "docker images"
+As a main-memory database, S-Store features disk-based command log-based recovery.  In case of failure, the user can replay S-Store's command logs in order to completely recreate the state of the system at the time of failure.
 
-.. code-block:: bash
+Running Example (Voter w/ Leaderboards)
+---------------------------------------
 
-	docker exec -it {CONTAINER-ID} ./sstore {BENCHMARK}
+S-Store comes with a number of benchmarks, including a simple streaming example meant to showcase the functionalities of S-Store.  This benchmark, votersstoreexample, mimics an online voting competition in which the audience votes for their favorite contestant, a sliding window is generated of the current leaderboard, and periodically, based on who has the least votes in that moment, a contestant is removed from the running.
 
-Once connected to this second terminal, you can run SQL statements in order to query the database.  There are also a variety of _statistics tools available as well.
+.. image:: images/voter3sp.png
+   :height: 300px
+   :width: 600px
+   :align: center
 
-5. Some other useful docker commands that you might want to use:
-
-List all images and detailed information:
-
-.. code-block:: bash
-
-	docker images
-
-Check active and inactive containers and obtain containers'id:
-
-.. code-block:: bash
-
-	docker ps -a
-
-
-Manual Start (Run on Native Linux)
-----------------------------------
-
-Native S-Store has the same requirements as its parent system, H-Store.  These are:
-
-- gcc/g++ +4.3
-- JDK 1.6/1.7
-- Python +2.7
-- Ant +1.7
-- Valgrind +3.5
-
-1. Install the required packages with the following commands:
-
-.. code-block:: bash
-
-	sudo apt-get update
-	sudo apt-get --yes install subversion gcc g++ openjdk-7-jdk valgrind ant
-
-2. In order to run S-Store, your machine needs to have OpenSSH enabled and you must be allowed to login to localhost without a password:
-
-.. code-block:: bash
-
-	sudo apt-get --yes install openssh-server
-	ssh-keygen -t rsa # Do not enter a password
-	cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
-
-Execute this simple test to make sure everything is set up properly:
-
-.. code-block:: bash
-
-	ssh -o StrictHostKeyChecking=no localhost "date"
-
-You should see the date printed without having to put in a password.  If this fails, then check your permissions in the ~/.ssh/ directory.
-
-The S-Store source code can be downloaded from the Github repository using the following command:
-
-.. code-block:: bash
-
-	git clone http://github.com/jmeehan16/s-store.git
-
-Once you have downloaded the source code, you should create a new branch for your group using:
-
-.. code-block:: bash
-
-	git checkout -b "your branch name"
-
-From there, follow the environmental setup instructions and the quick start instructions located at the H-Store webpage. Unless otherwise specified, the instructions are followed exactly.
-
-.. Note:: S-Store must be run on a 64 bit Linux machine, preferably with at least 6 GB of RAM. If you have a Mac or Windows machine, I recommend installing a virtual machine using a free service such as VirtualBox.
-
-Compiling and Executing a Benchmark
------------------------------------
-
-Executing S-Store is very similar to executing H-Store, documented here. All commands, including **hstore-prepare**, **hstore-benchmark**, **catalog-info**, and **hstore-invoke** work as expected, in addition to the **hstore terminal tool**, which can be extremely helpful to view what actually exists in each table.
-
-When running S-Store on a single node, these are the commands you will want to run. Note that you will need to recompile each time you make changes to your code.
-
-.. code-block:: bash
-
-	ant clean-java build-java
-	ant sstore-prepare $benchmarkname
-	ant sstore-benchmark $benchmarkname $parameters
-
-Or simply use the included shell script, which will run each command for you:
-
-.. code-block:: bash
-
-	./runsstorev1.sh $benchmarkname $txnspersecond "other parameters here"
-
-The runsstorev1.sh shell script uses a number of parameters that are desired by most S-Store runs, including the use of a single non-blocking client and disabling logging. If you want to run the script without those parameters, you can easily override them by re-adding the parameters with your desired values.
-
-
-Environmental Parameters
-------------------------
-
-S-Store adds a number of enviroment parameters to H-Store's base parameters:
-
-- `Global Parameters`_
-- `Site Parameters`_
-- `Client Parameters`_
-
-.. _Global Parameters: http://hstore.cs.brown.edu/documentation/configuration/properties-file/global/
-.. _Site Parameters: http://hstore.cs.brown.edu/documentation/configuration/properties-file/site/
-.. _Client Parameters: http://hstore.cs.brown.edu/documentation/configuration/properties-file/client/
-
-There are a few S-Store-specific parameters as well. They are:
-
-**global.sstore**:
-
-- Default: true
-- Permitted Type: boolean
-- Enables S-Store and its related functionality.
-
-**global.sstore_scheduler**:
-
-- Default: true
-- Permitted Type: boolean
-- Enables the serial scheduler, which ensures that when a procedure triggers another procedure, that transaction is scheduled before any other. 
-
-**global.weak_recovery**:
-
-- Default: true
-- Permitted Type: boolean
-- Enables the weak recovery mechanism, which only logs the "border" stored transactions that exist at the beginning of a workflow.
-
-**global.sstore_frontend_trigger**:
-
-- Default: true
-- Permitted Type: boolean
-- Enables frontend (PE) triggers.
+This workload can be broken down into three stored procedures: Vote (collect the audience's votes), Generate Leaderboard (update the sliding window), and Delete Contestant (remove the lowest contestant every X votes).  
