@@ -9,14 +9,63 @@ The most common use of S-Store is the creation of applications, or benchmarks.  
 Creating a New Benchmark
 ------------------------
 
-To begin creating a benchmark, please follow the instructions in the H-Store documentation, linked `here <http://hstore.cs.brown.edu/documentation/development/new-benchmark/>`_.  While the core benchmark pieces, such as the schema, stored procedures, project builder, and client are fundamentally the same, there are some important differences between an S-Store workload that features dataflow graphs and an H-Store OLTP workload.  These differences are listed below.
+To begin creating a benchmark, please follow the instructions in the H-Store documentation, linked `here <http://hstore.cs.brown.edu/documentation/development/new-benchmark/>`_.  The high-level overview of these steps are below:
+
+1. Create a **new directory** in the source tree under the src/benchmarks directory that will contain your benchmark. The high-level directory for your benchmark should contain a separate directory for the stored procedures. In the example shown below, the "votersstoreexample” benchmark is being created under the “edu.brown.benchmark” package:
+
+.. code-block:: bash
+
+	mkdir -p src/benchmarks/edu/brown/benchmark/votersstoreexample
+	mkdir src/benchmarks/edu/brown/benchmark/votersstoreexample/procedures
+
+.. Note:: More details listed here: `H-Store Setup <http://hstore.cs.brown.edu/documentation/development/new-benchmark/#setup>`_.
+
+2. Add your benchmark to the **ProjectType** class, located in src/frontend/edu/brown/utils/ProjectType.java
+
+.. code-block:: java
+
+	public enum ProjectType {
+		// "Benchmark Identifier" ("Benchmark Name", "Benchmark Package")
+		VOTERSSTOREEXAMPLE ("VoterSStoreExample", "edu.brown.benchmark.votersstoreexample");
+		...
+	}
+
+.. Note:: More details listed here: `H-Store ProjectType <http://hstore.cs.brown.edu/documentation/development/new-benchmark/#projectype>`_.
+
+3. Create a **schema file** (DDL file) in your benchmark directory.  In votersstoreexample, the schema file is named votersstoreexample-ddl.sql
+
+.. Note:: More details listed here: `H-Store Schema <http://hstore.cs.brown.edu/documentation/development/new-benchmark/#schema>`_.
+
+4. Create **stored procedures** for your benchmark in the "procedures" folder created earlier.  These stored procedures will extend the VoltProcedure class.  They should contain parameterized SQL statements that are queued within the run(...) method.
+
+.. Note:: More details listed here: `H-Store StoredProcedures <http://hstore.cs.brown.edu/documentation/development/new-benchmark/#storedprocedures>`_.
+
+5. Create the **project builder** class, which will extend the AbstractProjectBuilder.  It will define 1) the benchmark's Data Loader class, 2) the benchmark's Client Driver class, 3) the default stored procedures that are included, and 4) the default partitioning scheme for the tables/windows/streams in the database.  The Data Loader and Client Driver class files must be defined in two static parameters m_clientClass and m_loaderClass, respectively.
+
+.. Note:: In single-sited S-Store, the partitioning scheme used is not important, as all state will live on the same partition.  It is still recommended to include a partitioning scheme nonetheless. More details listed here: `H-Store ProjectBuilder <http://hstore.cs.brown.edu/documentation/development/new-benchmark/#projectbuilder>`_.
+
+6. Create the **data loader**, which is used to populate the database with initial data before the benchmark begins.
+
+.. Note:: More details listed here: `H-Store DataLoader <http://hstore.cs.brown.edu/documentation/development/new-benchmark/#dataloader>`_.
+
+7. Create a **client driver** class, which will submit transaction requests at a rate specified at runtime.  This will be covered in further detail in the next section.
+
+8. Create a **benchmark specification** file in properties/benchmarks/ that will be named [classname].properties.  By default, S-Store will look for the specification file in this directory based on the value of the project parameter.  This file needs to contain a single line, the location of the project builder class.  Here is the example of votersstoreexample.properties:
+
+.. code-block:: java
+
+	builder = edu.brown.benchmark.votersstoreexample.VoterSStoreExampleProjectBuilder
+
+.. Note:: More details listed here: `H-Store Specification <http://hstore.cs.brown.edu/documentation/development/new-benchmark/#specification>`_.
+
+While the core benchmark pieces, such as the schema, stored procedures, project builder, and client are fundamentally the same, there are some important differences between an S-Store workload that features dataflow graphs and an H-Store OLTP workload.  These differences are listed below.
 
 Creating Batches and a Client
 -----------------------------
 
 S-Store executes and orders its dataflow processing in terms of batches.  A batch can be considered a group of one or more tuples that should be executed as a single, atomic unit.  Each batch includes a batch_id, which is associated with the time at which the batch arrived.  These batch_ids are attached to transactions incoming tuples are processed in order.  Batches and batch_ids are currently created on the client side.
 
-Programming a client is very similar to the process described in the H-Store documentation, but with some key differences.  There are two primary methods of ingesting data from the client to the engine.  The first method, similar to H-Store, is to generate new tuples directly within the client.  This method is best when data is fabricated, as the input rate can easily be controlled at runtime.  The second method is to use the StreamGenerator tool (documented here) to simulate an incoming stream.
+Programming a client is very similar to the process described in the H-Store documentation (`H-Store Client <http://hstore.cs.brown.edu/documentation/development/new-benchmark/#clientdriver>`_.), but with some key differences.  There are two primary methods of ingesting data from the client to the engine.  The first method, similar to H-Store, is to generate new tuples directly within the client.  This method is best when data is fabricated, as the input rate can easily be controlled at runtime.  The second method is to use the StreamGenerator tool (documented here) to simulate an incoming stream.
 
 The client consists of two major methods for repeatedly inserting new tuples into the engine: the runLoop() method and the runOnce() method.   Within the runOnce() method, the user can define a segment of code that runs x times per second, where x is defined by the -Dclient.txnrate parameter at runtime for each client.  An example can be found below:
 
@@ -127,7 +176,7 @@ runOnce()/runLoop() can easily be connected to the StreamGenerator using a clien
 Creating Tables, Windows, and Streams
 -------------------------------------
 
-As is the case in H-Store, application schemas are defined in a DDL file.  The DDL file must be named the same as your benchmark, followed by "-ddl.sql".
+As is the case in H-Store, application schemas are defined in a DDL file (`H-Store DDL <http://hstore.cs.brown.edu/documentation/development/new-benchmark/#schema>`_).  The DDL file must be named the same as your benchmark, followed by "-ddl.sql".
 
 There are three primary types of state in S-Store applications: Tables, Streams, and Windows.  All three types of state are defined as tables, and all three are fully recoverable.
 
@@ -203,9 +252,7 @@ It is possible to attach an Execution Engine trigger to a window, as described b
 Creating OLTP Stored Procedures
 -------------------------------
 
-The primary unit of execution in S-Store are **stored procedures**.  Each execution of an S-Store stored procedure on an input batch results in a **transaction** with full ACID properties.  The definition of a stored procedure is very similar to that of H-Store Procedures_.  Constant SQL statements are defined and then submitted to the engine with parameters to be executed in batches.  An example of an OLTP stored procedure can be seen below.
-
-.. _Procedures: http://hstore.cs.brown.edu/documentation/development/new-benchmark/#storedprocedures
+The primary unit of execution in S-Store are **stored procedures**.  Each execution of an S-Store stored procedure on an input batch results in a **transaction** with full ACID properties.  The definition of a stored procedure is very similar to that of H-Store Procedures (`H-Store Procedures <http://hstore.cs.brown.edu/documentation/development/new-benchmark/#storedprocedures>`_).  Constant SQL statements are defined and then submitted to the engine with parameters to be executed in batches.  An example of an OLTP stored procedure can be seen below.
 
 .. code-block:: java
 
@@ -267,7 +314,7 @@ Like most streaming systems, the main method of programming a workload in S-Stor
 [image of dataflow graph]
 [dataflow graph caption]
 
-By default, each stored procedure in a dataflow graph executes on each batch that arrives from the input.  When a stored procedure commits on an input batch, the S-Store scheduler automatically triggers a transaction execution of the downstream stored procedure.  For each stored procedure, batch *b* should commit before batch *b+1*, and for each batch, stored procedure *t* is guaranteed to commit before transaction *t+1*.  See the engine_ section for more details on how this occurs and in what order the transactions will execute.
+By default, each stored procedure in a dataflow graph executes on each batch that arrives from the input.  When a stored procedure commits on an input batch, the S-Store scheduler automatically triggers a transaction execution of the downstream stored procedure.  For each stored procedure, batch *b* should commit before batch *b+1*, and for each batch, stored procedure *t* is guaranteed to commit before transaction *t+1*.  See the S-Store Engine section for more details on how this occurs and in what order the transactions will execute.
 
 Dataflow graphs are defined as a series of triggering procedures, which are defined in each individual SP of the graph.  At the beginning of each dataflow SP, the user should define what input stream triggers this particular SP within the *toSetTriggerTableName()* function.  An example of this for *SP2* as listed below:
 

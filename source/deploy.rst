@@ -1,7 +1,7 @@
 .. _deploy:
 
 ****************************
-Deployment
+Deploying S-Store
 ****************************
 
 Quick Start (Dockerized)
@@ -65,16 +65,18 @@ Check active and inactive containers and obtain containers'id:
 	docker ps -a
 
 
-Manual Start (Run on Native Linux)
+Manual Start (Environment Setup on Native Linux)
 ----------------------------------
 
-Native S-Store has the same requirements as its parent system, H-Store.  These are:
+S-Store is easy to set up on any Linux machine, and is recommended as the easiest method of developing new benchmarks.  You will need a **64-bit version of Linux** with at least 2 cores and a recommended 6 GB of RAM available.  Native S-Store has the same requirements as its parent system, H-Store.  These are:
 
 - gcc/g++ +4.3
 - JDK 1.6/1.7
 - Python +2.7
 - Ant +1.7
 - Valgrind +3.5
+
+.. Note:: S-Store does **not** support JDK 1.8 at this time.  You will need to use JDK 1.6 or 1.7.  If you are running a machine with JDK 1.8 installed, you can either install 1.7 alongside it, or install S-Store within a virtual machine.
 
 1. Install the required packages with the following commands:
 

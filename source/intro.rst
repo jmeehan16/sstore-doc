@@ -22,6 +22,11 @@ S-Store is designed for a variety of streaming use cases that involve shared mut
 Transaction Model
 -----------------
 
+.. image:: images/TE-image.png
+   :height: 200px
+   :width: 400px
+   :align: center
+
 Like most streaming systems, S-Store models its workflows as a dataflow graph, a directed acyclic graph of operations.  Much like OLTP systems such as H-Store, operations in S-Store are modeled as stored procedures (SP).  Incoming tuples are grouped into batches, each of which must be executed as one atomic unit and ordered according to their arrival time.  When a stored procedure executes one of these batches, it creates a transaction execution (TE).  Transaction executions are fully ACID in their semantics, meaning that any state they touch are protected during execution and all changes are either committed or rolled back together.
 
 In addition to these ACID semantics, S-Store ensures that each batch is executed in order according to their batch-ids.  For each stored procedure, a transaction execution of batch-id B is guaranteed to commit before the TE of batch-id B+1.  Similarly, for each batch-id B, stored procedure N is guaranteed to execute before stored procedure N+1, where N+1 is the next stored procedure downstream.  Each of these TEs is executed once and only once, even in the event of a failure.
@@ -30,6 +35,11 @@ To learn more about applications, the transaction model, and design of S-Store, 
 
 Architecture
 ------------
+
+.. image:: images/architecture.png
+   :height: 320px
+   :width: 600px
+   :align: center
 
 S-Store is built on top of H-Store, a distributed main-memory OLTP database.  You can read more about H-Store `here <https://hstore.cs.brown.edu>`_.  S-Store adds a number of streaming constructs to H-Store, including:
 
@@ -48,11 +58,19 @@ As a main-memory database, S-Store features disk-based command log-based recover
 Running Example (Voter w/ Leaderboards)
 ---------------------------------------
 
-S-Store comes with a number of benchmarks, including a simple streaming example meant to showcase the functionalities of S-Store.  This benchmark, votersstoreexample, mimics an online voting competition in which the audience votes for their favorite contestant, a sliding window is generated of the current leaderboard, and periodically, based on who has the least votes in that moment, a contestant is removed from the running.
+S-Store comes with a number of benchmarks, including a simple streaming example meant to showcase the functionalities of S-Store.  This benchmark, called votersstoreexample in the code, mimics an online voting competition in which the audience votes for their favorite contestant, a sliding window is generated of the current leaderboard, and periodically, based on who has the least votes in that moment, a contestant is removed from the running.
 
 .. image:: images/voter3sp.png
    :height: 300px
    :width: 600px
    :align: center
 
-This workload can be broken down into three stored procedures: Vote (collect the audience's votes), Generate Leaderboard (update the sliding window), and Delete Contestant (remove the lowest contestant every X votes).  
+This workload can be broken down into three stored procedures: 
+
+**Vote** - This procedure validates and records a new vote for a contestant, then passes the vote downstream.
+
+**GenerateLeaderboard** - This procedure creates a sliding window that indicates the current leaderboard of who has the most/least votes.
+
+**DeleteContestant** - When a specific number of votes has been collected, the contestant with the fewest votes will be removed.
+
+As shown in the diagram above, each procedure shares state with other procedures, making it necessary to use transactions for correct state management.  By default, the benchmark takes a single tuple per batch, but can be configured to instead operate on larger batches of tuples.
