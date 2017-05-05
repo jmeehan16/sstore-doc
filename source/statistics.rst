@@ -52,4 +52,4 @@ The most useful of these commands are:
 .. code-block:: bash
 
 	exec @Statistics txncounter 1 #gives the transaction counter statistics
-	exec @Statistics table 1 #gives the number of tuples in each table
+	exec @Statistics table 1 #gives statistics about the tuples in each table

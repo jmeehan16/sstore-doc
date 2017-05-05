@@ -72,8 +72,8 @@ The client consists of two major methods for repeatedly inserting new tuples int
 .. code-block:: java
 
 	static AtomicLong batchid = new AtomicLong(0); //monotonically-increasing batchid
-												   //increased when a new batch is created
-	TupleGenerator tuplegenerator = new TupleGenerator(); //custom-designed tuple generator for fabricating new tuples
+				//increased when a new batch is created
+	TupleGenerator tuplegenerator = new TupleGenerator(); //custom-designed tuple generator class for fabricating new tuples
 
 	protected boolean runOnce() throws IOException {
 
@@ -311,8 +311,10 @@ Creating Dataflow Graph Stored Procedures (Partition Engine Triggers)
 
 Like most streaming systems, the main method of programming a workload in S-Store is via **dataflow graphs**.  A dataflow graph in S-Store is a series of stored procedures which are connected via streams in a directed acyclic graph.  
 
-[image of dataflow graph]
-[dataflow graph caption]
+.. image:: images/voter3sp.png
+   :height: 300px
+   :width: 600px
+   :align: center
 
 By default, each stored procedure in a dataflow graph executes on each batch that arrives from the input.  When a stored procedure commits on an input batch, the S-Store scheduler automatically triggers a transaction execution of the downstream stored procedure.  For each stored procedure, batch *b* should commit before batch *b+1*, and for each batch, stored procedure *t* is guaranteed to commit before transaction *t+1*.  See the S-Store Engine section for more details on how this occurs and in what order the transactions will execute.
 

@@ -32,7 +32,6 @@ Below is a list of supported features in S-Store.  All features are directly imp
 - Ordered execution for dataflow graphs of SPs: **SUPPORTED**
 - Proper triggering from one SP to next in dataflow graph: **SUPPORTED**
 - Exactly-once - No repeat transactions: **SUPPORTED**
-- Exactly-once - Retry all aborted txns immediately: **FUTURE RELEASE**
 
 **RECOVERY:**
 

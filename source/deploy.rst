@@ -1,8 +1,8 @@
 .. _deploy:
 
-****************************
-Deploying S-Store
-****************************
+*******************************
+Deploying and Executing S-Store
+*******************************
 
 Quick Start (Dockerized)
 ------------------------
@@ -66,7 +66,7 @@ Check active and inactive containers and obtain containers'id:
 
 
 Manual Start (Environment Setup on Native Linux)
-----------------------------------
+------------------------------------------------
 
 S-Store is easy to set up on any Linux machine, and is recommended as the easiest method of developing new benchmarks.  You will need a **64-bit version of Linux** with at least 2 cores and a recommended 6 GB of RAM available.  Native S-Store has the same requirements as its parent system, H-Store.  These are:
 
@@ -107,13 +107,13 @@ The S-Store source code can be downloaded from the Github repository using the f
 
 	git clone http://github.com/jmeehan16/s-store.git
 
-Once you have downloaded the source code, you should create a new branch for your group using:
+Once the code is downloaded and the desired branch selected, run the following command on the root directory of S-Store:
 
 .. code-block:: bash
 
-	git checkout -b "your branch name"
+	ant build
 
-From there, follow the environmental setup instructions and the quick start instructions located at the H-Store webpage. Unless otherwise specified, the instructions are followed exactly.
+.. Note:: This will build all of the portions of the S-Store codebase.  Depending on the development environment, this can take a good bit of time.  If your development is limited to benchmarks only, it is much quicker to simply rebuild the Java portion of the codebase using "ant build-java".
 
 .. Note:: S-Store must be run on a 64 bit Linux machine, preferably with at least 6 GB of RAM. If you have a Mac or Windows machine, I recommend installing a virtual machine using a free service such as VirtualBox.
 
@@ -127,8 +127,8 @@ When running S-Store on a single node, these are the commands you will want to r
 .. code-block:: bash
 
 	ant clean-java build-java
-	ant sstore-prepare $benchmarkname
-	ant sstore-benchmark $benchmarkname $parameters
+	ant sstore-prepare -Dproject=$benchmarkname
+	ant sstore-benchmark -Dproject=$benchmarkname $parameters
 
 Or simply use the included shell script, which will run each command for you:
 
@@ -138,11 +138,28 @@ Or simply use the included shell script, which will run each command for you:
 
 The runsstorev1.sh shell script uses a number of parameters that are desired by most S-Store runs, including the use of a single non-blocking client and disabling logging. If you want to run the script without those parameters, you can easily override them by re-adding the parameters with your desired values.
 
+Interacting with a Live Database
+--------------------------------
+
+Like most databases, it is possible to interact directly with a live S-Store database.  Because S-Store is a main-memory database, it will need to reload data into its table objects every time it restarts.  To interact with an S-Store database, you can run an existing benchmark in a way that does not shut down the system once the data has been loaded.  The easiest way to do this is to use the following command:
+
+.. code-block:: bash
+
+	ant sstore-benchmark-console -Dproject=$benchmarkname $parameters
+
+This will automatically set the "noshutdown" parameter to true.  Once S-Store is running, open another terminal window in the same root directory as S-Store.  From there, you can open an interactive S-Store terminal by running (in a new terminal!):
+
+.. code-block:: bash
+
+	./sstore $benchmarkname
+
+From this interactive terminal, you can run adhoc SQL statements, as well as `statistics_ <http://hstore.cs.brown.edu/documentation/system-procedures/statistics/>`_ transactions.  This terminal window can remain open even once S-Store is stopped, and will automatically reconnect to a new S-Store instance run from the same root directory.  However, clearly you will be unable to query the database when it is not running.
+
 
 Environmental Parameters
 ------------------------
 
-S-Store adds a number of enviroment parameters to H-Store's base parameters:
+S-Store adds a number of enviroment parameters to H-Store's base parameters.  To use these parameters at runtime, use "-D" and then the parameter name (for instance, "-Dclient.txnrate=[txnrate]").  A full list of H-Store's parameters can be found here:
 
 - `Global Parameters`_
 - `Site Parameters`_
@@ -152,13 +169,51 @@ S-Store adds a number of enviroment parameters to H-Store's base parameters:
 .. _Site Parameters: http://hstore.cs.brown.edu/documentation/configuration/properties-file/site/
 .. _Client Parameters: http://hstore.cs.brown.edu/documentation/configuration/properties-file/client/
 
+Some of the most helpful S-Store parameters are listed below:
+
+**client.txnrate**:
+
+- Default: 1000
+- Permitted Type: integer
+- Indicates the number of transactions per second that are being submitted to the engine (per client).  If using the streamgenerator, it is recommended that you set this parameter to "-1", as this will cause the client to send as many transaction requests per second as are provided by the streamgenerator.
+
+**client.threads_per_host**:
+
+- Default: 1
+- Permitted Type: integer
+- Indicates the number of client threads that will be submitting transaction requests to the engine.
+
+**client.benchmark_param_0**:
+
+- Default: 0
+- Permitted Type: integer
+- Generic input parameter that can be used within a benchmark.
+
+**client.benchmark_param_str**:
+
+- Default: NULL
+- Permitted Type: String
+- Generic input parameter that can be used within a benchmark.
+
+**noshutdown**:
+
+- Default: false
+- Permitted Type: boolean
+- Keeps S-Store running, even after the benchmark has completed.
+
+**noexecute**:
+
+- Default: false
+- Permitted Type: boolean
+- Causes the benchmark to run, but no requests to be sent from the client.
+
 There are a few S-Store-specific parameters as well. They are:
 
 **global.sstore**:
 
 - Default: true
 - Permitted Type: boolean
-- Enables S-Store and its related functionality.
+- Enables S-Store and its related functionality.  When set to false, the system should operate as pure H-Store.
 
 **global.sstore_scheduler**:
 
@@ -177,3 +232,21 @@ There are a few S-Store-specific parameters as well. They are:
 - Default: true
 - Permitted Type: boolean
 - Enables frontend (PE) triggers.
+
+**client.input_port**:
+
+- Default: 21001
+- Permitted Type: integer
+- Specifies which port the streamgenerator should connect to
+
+**client.input_host**:
+
+- Default: "localhost"
+- Permitted Type: String
+- Specifies which hostname the streamgenerator should connect to
+
+**client.bigdawg_port**:
+
+- Default: 21002
+- Permitted Type: integer
+- Specifies the port to be used to connect to BigDAWG
