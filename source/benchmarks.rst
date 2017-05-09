@@ -106,7 +106,7 @@ The runLoop() method runs as one would expect a loop to: as many times as possib
 					failedTuples.incrementAndGet();
 				}
 			} // WHILE
-		} catch (Exception e) { // Client has no clean mechanism for terminating with the DB.
+		} catch (Exception e) { 
 			e.printStackTrace();
 		}
 	}
@@ -217,8 +217,8 @@ In order to create a window, the user must first create a stream that features t
     	tuple_id 	bigint    	NOT NULL,
     	tuple_val 	integer    	NOT NULL,
     	ts 			bigint		NOT NULL,
-    	WSTART		integer,
-    	WEND		integer
+    	WSTART		integer, --an integer column that is only used behind the scenes for window management
+    	WEND		integer --an integer column that is only used behind the scenes for window management
 	);
 
 Once the template stream has been defined, the window can be defined based on that.  An example of a tuple-based window is below:

@@ -7,13 +7,13 @@ Deploying and Executing S-Store
 Quick Start (Dockerized)
 ------------------------
 
-The easiest way to build an S-Store instance is using a Docker image.  The biggest advantage to this method is that you do not need to worry about the requirements for S-Store, but instead can run an instance on any system that can run Docker.  To learn more about how to install Docker, visit https://www.docker.com/
+The easiest way to build an S-Store instance is using a Docker image.  Docker is a software container platform designed to allow code to run in a virtual container, with all requirements for installation already included.  The biggest advantage to this method is that you do not need to worry about the requirements for S-Store, but instead can run an instance on any system that can run Docker.  To learn more about how to install Docker on your specific system, visit https://www.docker.com/
 
 1. Clone S-Store from github using the following command:
 
 .. code-block:: bash
 
-	git clone http://github.com/jmeehan16/s-store.git
+	git clone http://github.com/s-store/s-store.git
 
 2. Once you have Docker installed, you can then build the S-Store image. In a terminal, change to the directory that you just cloned S-Store into, and run the following command. This will install all necessary packages, compile S-Store, and prepare the benchmark votersstoreexample by default. 
 
@@ -33,7 +33,7 @@ The easiest way to build an S-Store instance is using a Docker image.  The bigge
 
 	docker run s-store /bin/bash -c "service ssh restart && ant sstore-prepare -Dproject={BENCHMARK} && ant sstore-benchmark -Dproject={BENCHMARK}"
 
-.. Note:: A good example benchmark to begin is votersstoreexample, which highlights the functionalities available in S-Store.
+.. Note:: A good example benchmark to begin is votersstoreexample, which highlights the core functionalities available in S-Store.
 
 4. If you wish to run commands on S-Store in an interactive way, you will need to run two terminals.  In the first terminal, use:
 
@@ -42,13 +42,17 @@ The easiest way to build an S-Store instance is using a Docker image.  The bigge
 	docker run -it s-store /bin/bash
 	service ssh restart && ant sstore-prepare -Dproject={BENCHMARK} && ant sstore-benchmark-console -Dproject={BENCHMARK}
 
+[insert screenshot here]
+
 Then, in a second terminal, you will need to connect to the running container.  The container's ID can be obtained running "docker images"
 
 .. code-block:: bash
 
 	docker exec -it {CONTAINER-ID} ./sstore {BENCHMARK}
 
-Once connected to this second terminal, you can run SQL statements in order to query the database.  There are also a variety of _statistics tools available as well.
+[insert screenshot here]
+
+Once connected to this second terminal, you can run SQL statements in order to query the database.  There are also a variety of statistics tools available as well.
 
 5. Some other useful docker commands that you might want to use:
 
@@ -115,7 +119,7 @@ Once the code is downloaded and the desired branch selected, run the following c
 
 .. Note:: This will build all of the portions of the S-Store codebase.  Depending on the development environment, this can take a good bit of time.  If your development is limited to benchmarks only, it is much quicker to simply rebuild the Java portion of the codebase using "ant build-java".
 
-.. Note:: S-Store must be run on a 64 bit Linux machine, preferably with at least 6 GB of RAM. If you have a Mac or Windows machine, I recommend installing a virtual machine using a free service such as VirtualBox.
+.. Note:: S-Store must be run on a 64 bit Linux machine, preferably with at least 6 GB of RAM. If you have a Mac or Windows machine, I recommend installing a virtual machine using a free service such as VirtualBox.  VirtualBox can be downloaded at `www.virtualbox.org <https://www.virtualbox.org/>`_.
 
 Compiling and Executing a Benchmark
 -----------------------------------
@@ -183,6 +187,12 @@ Some of the most helpful S-Store parameters are listed below:
 - Permitted Type: integer
 - Indicates the number of client threads that will be submitting transaction requests to the engine.
 
+**client.duration**:
+
+- Default: 60000
+- Permitted Type: integer
+- Indicates the period of time the benchmark will run, in milliseconds.
+
 **client.benchmark_param_0**:
 
 - Default: 0
@@ -194,6 +204,12 @@ Some of the most helpful S-Store parameters are listed below:
 - Default: NULL
 - Permitted Type: String
 - Generic input parameter that can be used within a benchmark.
+
+**site.commandlog_enable**:
+
+- Default: false
+- Permitted Type: boolean
+- Indicates whether commands are being logged to disk.
 
 **noshutdown**:
 
@@ -207,7 +223,7 @@ Some of the most helpful S-Store parameters are listed below:
 - Permitted Type: boolean
 - Causes the benchmark to run, but no requests to be sent from the client.
 
-There are a few S-Store-specific parameters as well. They are:
+There are several S-Store-specific parameters as well. They are:
 
 **global.sstore**:
 
@@ -225,7 +241,7 @@ There are a few S-Store-specific parameters as well. They are:
 
 - Default: true
 - Permitted Type: boolean
-- Enables the weak recovery mechanism, which only logs the "border" stored transactions that exist at the beginning of a workflow.
+- Enables the weak recovery mechanism, which only logs the "border" stored transactions that exist at the beginning of a workflow.  If not enabled, then strong recovery is used instead.
 
 **global.sstore_frontend_trigger**:
 
