@@ -6,13 +6,18 @@ Stream Generator Tool
 
 The Stream Generator is a simple tool able to take a flat CSV file and convert it to a stream of tuples, represented by strings.  It is primarily used to simulate streams of tuples when no actual stream is available.
 
-To install the Stream Generator, navigate to the tools/streamgenerator directory.  Simply run the command:
+You will need to install Maven in order to compile the Stream Generator.  You can find instructions for this at `maven.apache.org <https://maven.apache.org>`_, or by running:
+
+.. code-block:: bash
+
+	sudo apt-get update
+	sudo apt-get install maven
+
+Once Maven is installed, install the Stream Generator by navigating to the tools/streamgenerator directory.  Then, run the command:
 
 .. code-block:: bash
 
 	mvn install
-
-.. Note:: You will need to install mvn if you have not already.
 
 To use the Stream Generator, it is recommended that you use the "stream-generator-v1-jar-with-dependencies.jar."  A typical use looks like this:
 

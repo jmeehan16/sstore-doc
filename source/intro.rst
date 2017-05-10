@@ -41,7 +41,7 @@ Architecture
    :width: 600px
    :align: center
 
-S-Store is built on top of **H-Store**, a distributed main-memory OLTP database.  You can read more about H-Store `here <https://hstore.cs.brown.edu>`_.  H-Store, in turn, is partially built on the same codebase as **VoltDB**.  You can read more about VoltDB `here <https://docs.voltdb.com/UsingVoltDB/>`_.  S-Store adds a number of streaming constructs to H-Store, including:
+S-Store is built on top of **H-Store**, a distributed main-memory OLTP database.  You can read more about H-Store `here <https://hstore.cs.brown.edu>`_.  H-Store, in turn, is partially built on the same codebase as **VoltDB**.  You can read more about VoltDB on their `website <https://docs.voltdb.com/UsingVoltDB/>`_.  S-Store adds a number of streaming constructs to H-Store, including:
 
 **Streams** - Append/delete data structures (queues) that push data from one piece of processing to another.  Streams allow data to be passed from one SP to another in a dataflow graph.
 
@@ -79,3 +79,5 @@ Using S-Store
 -------------
 
 S-Store is licensed under the terms of the GNU Affero General Public License Version 3 as published by the Free Software Foundation. See the `GNU Affero General Public License <http://www.gnu.org/licenses/>`_ for more details.  All software is provided as-is.
+
+S-Store can be downloaded on `GitHub <https://github.com/s-store/sstore-soft>`_

@@ -59,7 +59,8 @@ This workload can be broken down into three stored procedures: Vote (collect the
 Get the code
 -------------
 
-Git repository link here (TBD)
+S-Store is licensed under the terms of the GNU Affero General Public License Version 3 as published by the Free Software Foundation. See the `GNU Affero General Public License <http://www.gnu.org/licenses/>`_ for more details.  All software is provided as-is.
 
+S-Store can be downloaded on `GitHub <https://github.com/s-store/sstore-soft>`_
 
 

@@ -39,22 +39,37 @@ The easiest way to build an S-Store instance is using a Docker image.  Docker is
 
 .. code-block:: bash
 
-	docker run -it s-store /bin/bash
+	docker run --name sstore-console -it s-store /bin/bash
+	cd /root/s-store
 	service ssh restart && ant sstore-prepare -Dproject={BENCHMARK} && ant sstore-benchmark-console -Dproject={BENCHMARK}
 
-[insert screenshot here]
+.. image:: images/sstore-console-docker.png
+   :width: 1000px
+   :align: center
 
-Then, in a second terminal, you will need to connect to the running container.  The container's ID can be obtained running "docker images"
+Then, in a second terminal, you will need to connect to the running container.  The container's ID can be obtained running "docker ps"
 
 .. code-block:: bash
 
-	docker exec -it {CONTAINER-ID} ./sstore {BENCHMARK}
+	docker ps -a
+	docker exec -it {CONTAINER-ID} 
+	cd /root/s-store
+	./sstore {BENCHMARK}
 
-[insert screenshot here]
+.. image:: images/sstore-docker-adhoc.png
+   :width: 1000px
+   :align: center
 
 Once connected to this second terminal, you can run SQL statements in order to query the database.  There are also a variety of statistics tools available as well.
 
-5. Some other useful docker commands that you might want to use:
+5. To clean up any existing docker containers that are no longer needed, simply run:
+
+.. code-block:: bash
+
+	docker ps -a
+	docker rm -f {CONTAINER-ID}
+
+6. Some general docker commands that you might want to use:
 
 List all images and detailed information:
 
@@ -109,7 +124,7 @@ The S-Store source code can be downloaded from the Github repository using the f
 
 .. code-block:: bash
 
-	git clone http://github.com/jmeehan16/s-store.git
+	git clone http://github.com/s-store/sstore-soft.git
 
 Once the code is downloaded and the desired branch selected, run the following command on the root directory of S-Store:
 

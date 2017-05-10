@@ -257,6 +257,45 @@ The primary unit of execution in S-Store are **stored procedures**.  Each execut
 .. code-block:: java
 
 	@ProcInfo(
+		partitionInfo = "t.t_id:0", //indicates that the partition that should be accessed in this SP
+						//corresponds to the "0th" parameter of the run(params) method
+						//hashed to match the t_id column of table t
+		singlePartition = true;
+	)
+	public class OLTP extends VoltProcedure {
+
+		public final SQLStmt insertOutputStream = "INSERT INTO t (t_id, t_val) VALUES (?,?);"; //parameterized insert
+
+		//the part of the stored procedure that actually runs on execution
+		public long run(int t_id, int t_val) {
+
+			voltQueueSQL(insertTValue, t_id, t_val);
+			VoltTable response = voltExecuteSQL();
+			
+			return BenchmarkConstants.SUCCESS; //return a long that indicates success
+		}
+	}
+
+In OLTP stored procedures, it is possible to pass any number of parameters into the "run()" method.  These parameters should then be used with parameterized SQL statements, as shown above.  The parameterized SQL statements are queued using the voltQueueSQL() method, and then submitted together to the Execution Engine using the voltExecuteSQL() method.
+
+
+Creating Dataflow Graph Stored Procedures (Partition Engine Triggers)
+---------------------------------------------------------------------
+
+Like most streaming systems, the main method of programming a workload in S-Store is via **dataflow graphs**.  A dataflow graph in S-Store is a series of stored procedures which are connected via streams in a directed acyclic graph.  
+
+.. image:: images/voter3sp.png
+   :height: 300px
+   :width: 600px
+   :align: center
+
+By default, each stored procedure in a dataflow graph executes on each batch that arrives from the input.  When a stored procedure commits on an input batch, the S-Store scheduler automatically triggers a transaction execution of the downstream stored procedure.  For each stored procedure, batch *b* should commit before batch *b+1*, and for each batch, stored procedure *t* is guaranteed to commit before transaction *t+1*.  See the S-Store Engine section for more details on how this occurs and in what order the transactions will execute.
+
+Below is an example of a dataflow graph SP, otherwise known as a Streaming SP:
+
+.. code-block:: java
+
+	@ProcInfo(
 		partitionNum = 0; //states which partition this SP runs on
 		singlePartition = true;
 	)
@@ -301,23 +340,6 @@ The primary unit of execution in S-Store are **stored procedures**.  Each execut
 		}
 	}
 
-There are a few things to note in this simple SP example.  First of all, the run(int part_id) method is standard, and should be included in every streaming SP.  The part_id parameter automatically uses the partitionNum, which is set in the @ProcInfo block at the top of the SP.
-
-Again, currently stream maintenance is handled by the developer.  It is very important that the developer at the minimum 1) pull the most recent information from the input stream, 2) delete the same info from the input stream, and 3) insert new stream information into the output stream, if necessary.  Because single-node S-Store 
-
-
-Creating Dataflow Graph Stored Procedures (Partition Engine Triggers)
----------------------------------------------------------------------
-
-Like most streaming systems, the main method of programming a workload in S-Store is via **dataflow graphs**.  A dataflow graph in S-Store is a series of stored procedures which are connected via streams in a directed acyclic graph.  
-
-.. image:: images/voter3sp.png
-   :height: 300px
-   :width: 600px
-   :align: center
-
-By default, each stored procedure in a dataflow graph executes on each batch that arrives from the input.  When a stored procedure commits on an input batch, the S-Store scheduler automatically triggers a transaction execution of the downstream stored procedure.  For each stored procedure, batch *b* should commit before batch *b+1*, and for each batch, stored procedure *t* is guaranteed to commit before transaction *t+1*.  See the S-Store Engine section for more details on how this occurs and in what order the transactions will execute.
-
 Dataflow graphs are defined as a series of triggering procedures, which are defined in each individual SP of the graph.  At the beginning of each dataflow SP, the user should define what input stream triggers this particular SP within the *toSetTriggerTableName()* function.  An example of this for *SP2* as listed below:
 
 .. code-block:: java
@@ -331,6 +353,8 @@ Dataflow graphs are defined as a series of triggering procedures, which are defi
 Dataflow stored procedures are required to take in a single parameter: 
 
 *int* part_id - This parameter will automatically be filled in with the partitionNum ProcInfo parameter set at the beginning of the SP.  It is irrelevant for single-partition S-Store, but will be used in the distributed version.
+
+Again, currently stream maintenance is handled by the developer.  It is very important that the developer at the minimum 1) pull the most recent information from the input stream, 2) delete the same info from the input stream, and 3) insert new stream information into the output stream, if necessary.  Because single-node S-Store 
 
 Passing Data Along Streams using VoltStreams
 --------------------------------------------
