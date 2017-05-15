@@ -4,7 +4,7 @@
 Connecting S-Store to BigDAWG
 *****************************
 
-We demonstrate the connection of S-Store and BigDAWG with the S-Store benchmark mimic2bigdawg. The benchmark injects data into table medevents in S-Store, and S-Store periodically pushes data in medevents to table mimic2v26.medevents in the analytical engine of Postgres. Analytical queries can be posted to BigDAWG. If mimic2v26.medevents is included in the query, BigDAWG will pull the data from S-Store first before executing the query in the Postgres engine. This guarantees that the user always obtains the most fresh data injected into BigDAWG. We demonstrate this functionality by the dockerized BigDAWG and S-Store.
+We demonstrate the connection of S-Store and BigDAWG with the S-Store benchmark mimic2bigdawg. In this configuration, S-Store is responsible for data ingestion. Benchmark mimic2bigdawg injects data into table medevents in S-Store, and S-Store periodically pushes data in medevents to table mimic2v26.medevents in the analytical engine of Postgres. Analytical queries can be posted to BigDAWG. If mimic2v26.medevents is included in the query, BigDAWG will pull the data from S-Store first before executing the query in the Postgres engine. This guarantees that the user always obtains the most fresh data injected into BigDAWG. We demonstrate this functionality by the dockerized BigDAWG and S-Store.
 
 Manual Setup
 ------------

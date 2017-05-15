@@ -16,8 +16,8 @@ S-Store
    deploy
    benchmarks
    engine
-   bigdawg
    streamgenerator
+   bigdawg
    statistics
    features
 
