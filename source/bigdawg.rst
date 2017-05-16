@@ -10,7 +10,7 @@ Manual Setup
 ------------
 We will open three terminals for the setup.
 
-1. In the first termianl, prepare the S-Store benchmark mimic2bigdawg.
+1. In the first termianl, start a docker container and prepare the S-Store benchmark mimic2bigdawg.
 
 .. code-block:: bash
 
@@ -31,20 +31,20 @@ We will open three terminals for the setup.
     cd /root/s-store/tools/streamgenerator/target
     wget http://www.cs.toronto.edu/~jdu/data/medevents.csv
 
-4. In the same terminal, start the stream generator. The following command will start to generate data stream for table medevents with the throughput of 100 tuples per second, for 10 minutes, and send to port 18000.
+4. In the same terminal, start the stream generator. The following command will start to generate data stream for table medevents with the throughput of 100 tuples per second, for 10 minutes, and send to port 21004.
 
 .. code-block:: bash
 
     cd /root/s-store/tools/streamgenerator/target
-    java -jar stream-ingestor-0.0.1-SNAPSHOT-jar-with-dependencies.jar -f medevents.csv -t 100 -d 600000 -p 18000
+    java -jar stream-ingestor-0.0.1-SNAPSHOT-jar-with-dependencies.jar -f medevents.csv -t 100 -d 600000 -p 21004
 
-5. Start a second terminal. In the second terminal, start S-Store benchmark mimic2bigdawg.
+5. Start a second terminal. In the second terminal, firstly connect to the running container that has been created in the first terminal, then start S-Store benchmark mimic2bigdawg.
 
 .. code-block:: bash
 
-    docker run -it s-store /bin/bash
+    docker exec -it `docker ps -a | awk '{if ($7 == "Up" && $2 == "s-store") print $1};'` /bin/bash
     cd /root/s-store
-    ./tools/sstore/testsstore.sh mimic2bigdawg -1 "-Dnoshutdown=true"
+    ./tools/sstore/testsstore.sh mimic2bigdawg -1 "-Dnoshutdown=true -Dclient.input_port=21004"
 
 6. Start a third terminal. In the third terminal, check out and start BigDAWG.
 

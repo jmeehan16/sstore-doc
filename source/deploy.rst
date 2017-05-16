@@ -52,7 +52,7 @@ Then, in a second terminal, you will need to connect to the running container.  
 .. code-block:: bash
 
 	docker ps -a
-	docker exec -it {CONTAINER-ID} 
+	docker exec -it {CONTAINER-ID} /bin/bash
 	cd /root/s-store
 	./sstore {BENCHMARK}
 
