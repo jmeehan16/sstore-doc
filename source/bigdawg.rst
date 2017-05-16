@@ -38,11 +38,13 @@ We will open three terminals for the setup.
     cd /root/s-store/tools/streamgenerator/target
     java -jar stream-ingestor-0.0.1-SNAPSHOT-jar-with-dependencies.jar -f medevents.csv -t 100 -d 600000 -p 21004
 
-5. Start a second terminal. In the second terminal, firstly connect to the running container that has been created in the first terminal, then start S-Store benchmark mimic2bigdawg.
+5. Start a second terminal. In the second terminal, find the running container that has been created in the first terminal, connect to it, and start S-Store benchmark mimic2bigdawg.
 
 .. code-block:: bash
 
-    docker exec -it `docker ps -a | awk -F' {2,}' '{if ($2 == "s-store" && $5 ~ /^Up/) print $1};'` /bin/bash
+    docker ps -a
+    docker exec -it {CONTAINER-ID} /bin/bash
+    service ssh restart
     cd /root/s-store
     ./tools/sstore/testsstore.sh mimic2bigdawg -1 "-Dnoshutdown=true -Dclient.input_port=21004"
 
