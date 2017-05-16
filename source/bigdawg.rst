@@ -42,7 +42,7 @@ We will open three terminals for the setup.
 
 .. code-block:: bash
 
-    docker exec -it `docker ps -a | awk -F' {2,}' '{if ($5 ~ /^Up/ && $2 == "s-store") print $1};'` /bin/bash
+    docker exec -it `docker ps -a | awk -F' {2,}' '{if ($2 == "s-store" && $5 ~ /^Up/) print $1};'` /bin/bash
     cd /root/s-store
     ./tools/sstore/testsstore.sh mimic2bigdawg -1 "-Dnoshutdown=true -Dclient.input_port=21004"
 
