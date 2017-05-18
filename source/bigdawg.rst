@@ -48,13 +48,14 @@ We will open three terminals for the setup.
     cd /root/s-store
     ./tools/sstore/testsstore.sh mimic2bigdawg -1 "-Dnoshutdown=true -Dclient.input_port=21004"
 
-6. Start a third terminal. In the third terminal, check out and start BigDAWG.
+6. Start a third terminal. In the third terminal, check out BigDAWG, compile and execute.
 
 .. code-block:: bash
 
     git clone https://github.com/bigdawg-istc/bigdawg.git
     cd bigdawg
     git checkout sstore-injection
+    ./compile
     cd provisions
     ./setup_bigdawg_docker.sh
 
