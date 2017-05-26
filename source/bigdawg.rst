@@ -8,47 +8,8 @@ We demonstrate the connection of S-Store and BigDAWG with the S-Store benchmark 
 
 Manual Setup
 ------------
-We will open three terminals for the setup.
 
-1. In the first termianl, start a docker container and prepare the S-Store benchmark mimic2bigdawg.
-
-.. code-block:: bash
-
-    docker run s-store /bin/bash -c "ant sstore-prepare -Dproject=mimic2bigdawg -Dhosts=localhost:0:0"
-
-2. In the same terminal, compile the stream generator.
-
-.. code-block:: bash
-
-    docker run -it s-store /bin/bash
-    cd /root/s-store/tools/streamgenerator
-    mvn install
-
-3. In the same terminal, download the csv file for the ingestion of medevents.
-
-.. code-block:: bash
-
-    cd /root/s-store/tools/streamgenerator/target
-    wget http://www.cs.toronto.edu/~jdu/data/medevents.csv
-
-4. In the same terminal, start the stream generator. The following command will start to generate data stream for table medevents with the throughput of 100 tuples per second, for 10 minutes, and send to port 21004.
-
-.. code-block:: bash
-
-    cd /root/s-store/tools/streamgenerator/target
-    java -jar stream-ingestor-0.0.1-SNAPSHOT-jar-with-dependencies.jar -f medevents.csv -t 100 -d 600000 -p 21004
-
-5. Start a second terminal. In the second terminal, find the running container that has been created in the first terminal, connect to it, and start S-Store benchmark mimic2bigdawg.
-
-.. code-block:: bash
-
-    docker ps -a
-    docker exec -it {CONTAINER-ID} /bin/bash
-    service ssh restart
-    cd /root/s-store
-    ./tools/sstore/testsstore.sh mimic2bigdawg -1 "-Dnoshutdown=true -Dclient.input_port=21004"
-
-6. Start a third terminal. In the third terminal, check out BigDAWG, compile and execute.
+Start a terminal. In the terminal, check out BigDAWG, switch to the sstore-injection branch, compile and execute.
 
 .. code-block:: bash
 
@@ -58,6 +19,8 @@ We will open three terminals for the setup.
     ./compile
     cd provisions
     ./setup_bigdawg_docker.sh
+
+S-Store ingests data in a rate of 100 tuples per second, for 10 minutes by default. After the ingestion is finished, S-Store stays online.
 
 Querying through BigDAWG/JDBC
 -----------------------------
@@ -85,11 +48,6 @@ Pushing/Pulling data via Binanry Format
 ---------------------------------------
 
 Data are migrated from S-Store to Postgres in CSV format by default.
-
-
-Known limitations
------------------
-
 
 
 ..
