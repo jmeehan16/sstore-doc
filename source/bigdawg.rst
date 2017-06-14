@@ -29,7 +29,7 @@ Start a terminal window. Execute the following query:
 
 .. code-block:: bash
 
-    curl -X POST -d "bdrel(select count(*) from mimic2v26.medevents;)" http://192.168.99.100:8080/bigdawg/query/
+    curl -X POST -d "bdrel(select count(*) from mimic2v26.medevents;)" http://localhost:8080/bigdawg/query/
 
 
 Pushing data from S-Store to Postgres
