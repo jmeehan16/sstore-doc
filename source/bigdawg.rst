@@ -35,7 +35,7 @@ Start a terminal window. Execute the following query:
 Pushing data from S-Store to Postgres
 -------------------------------------
 
-S-Store starts to push data to Postgres once both S-Store and BigDAWG are started and alive. Currently data is pushed from S-Store to Postgres on a time-based fashion only. The time between two pushes is defined in bigdawg/profiles/dev/dev-config.properties. The name of the entry is "sstore.injection.migrationGap", with the unit of millisecond, and is set to one minute (60000 milliseconds) by default, i.e., S-Store pushes data to Postgres once every one minute.
+S-Store starts to push data to Postgres once both S-Store and BigDAWG are started and alive. Currently data is pushed from S-Store to Postgres on a time-based fashion only. The time between two pushes is defined in bigdawg/profiles/dev/dev-config.properties. The name of the entry is "sstore.injection.migrationGap", with the unit of millisecond, and is set to one minute (60000 milliseconds) by default, i.e., S-Store pushes data to Postgres once per minute.
 
 
 Pulling data from S-Store
