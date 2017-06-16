@@ -31,6 +31,8 @@ Start a second terminal window. Execute the following query:
 
     curl -X POST -d "bdrel(select count(*) from mimic2v26.medevents;)" http://localhost:8080/bigdawg/query/
 
+The above query shows the amount of tuples in table mimic2v26.medevents in Postgres that have been migrated from S-Store.
+
 
 Pushing data from S-Store to Postgres
 -------------------------------------
