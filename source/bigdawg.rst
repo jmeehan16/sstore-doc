@@ -26,15 +26,22 @@ Notes:
 
 1. BigDawg only compiles in JDK 8.
 2. If BigDAWG is installed on Ubuntu, setup_bigdawg_docker.sh may reports errors during the setup of the BigDAWG catalog in Postgres. This is likely caused by Docker's storage driver aufs. This can be fixed by `switching the storage driver to devicemapper <https://muehe.org/posts/switching-docker-from-aufs-to-devicemapper/>`_.
+3. If BigDAWG is installed on Mac, please compile and run the setup script in Docker Quickstart Terminal as described in `the BigDAWG documentation <http://bigdawg-documentation.readthedocs.io/en/latest/getting-started.html#bigdawg-cluster-setup-steps>`_.
 
 Querying through BigDAWG/JDBC
 -----------------------------
 
-Once BigDAWG is started, it may still take S-Store a few minutes to be ready for data ingestion. Start a second terminal window. After one to two minutes, execute the following query:
+Once BigDAWG is started, it may still take S-Store a few minutes to be ready for data ingestion. Start a second terminal window. After one to two minutes, if BigDAWG is running on Ubuntu, execute the following query in the terminal:
 
 .. code-block:: bash
 
     curl -X POST -d "bdrel(select count(*) from mimic2v26.medevents;)" http://localhost:8080/bigdawg/query/
+
+If BigDAWG is running on Mac, execute the following query in the terminal:
+
+.. code-block:: bash
+
+    curl -X POST -d "bdrel(select count(*) from mimic2v26.medevents;)" http://192.168.99.100:8080/bigdawg/query/
 
 The above query shows the amount of tuples in table mimic2v26.medevents in Postgres that have been migrated from S-Store.
 
