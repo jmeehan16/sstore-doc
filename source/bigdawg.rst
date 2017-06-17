@@ -22,10 +22,15 @@ Start a terminal. In the terminal, check out BigDAWG, switch to the sstore-injec
 
 S-Store ingests data in a rate of 100 tuples per second, for 10 minutes by default. After the ingestion is finished, S-Store stays online.
 
+Notes:
+
+1. BigDawg only compiles in JDK 8.
+2. If BigDAWG is installed on Ubuntu, setup_bigdawg_docker.sh may reports errors during the setup of the BigDAWG catalog in Postgres. This is likely caused by Docker's storage driver AUFS. This can be fixed by `switching the storage driver to devicemapper <https://muehe.org/posts/switching-docker-from-aufs-to-devicemapper/>`_.
+
 Querying through BigDAWG/JDBC
 -----------------------------
 
-Start a second terminal window. Execute the following query:
+Once BigDAWG is started, it may still take S-Store a few minutes to be ready for data ingestion. Start a second terminal window. After one to two minutes, execute the following query:
 
 .. code-block:: bash
 
