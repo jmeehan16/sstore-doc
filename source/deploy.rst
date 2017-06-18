@@ -15,33 +15,38 @@ The easiest way to build an S-Store instance is using a Docker image.  Docker is
 
 	git clone http://github.com/s-store/s-store.git
 
-2. Once you have Docker installed, you can then build the S-Store image. In a terminal, change to the directory that you just cloned S-Store into, and run the following command. This will install all necessary packages, compile S-Store, and prepare the benchmark votersstoreexample by default. 
+2. Once you have Docker installed, you can then build the S-Store image. In a terminal, change to the directory that you just cloned S-Store into, and run the following command. This will download the fully-compiled S-Store docker image and start a new Docker container. 
 
 .. code-block:: bash
 
-	docker build -t s-store ./
+	./scripts/setup_docker.sh
 
-3. Once S-Store has been built, use the following command to run s-store image. This command will run the benchmark votersstoreexample with default parameters and show the statistics of the votersstoreexample.
-
-.. code-block:: bash
-
-	docker run s-store
-
-4. If you wish to run a different benchmark on the S-Store image in a non-interactive way, you can use the following command.
+3. Once the script has finished, you will be connected to the S-Store container (named sstore-console) in the terminal where you ran the script.  In the same terminal, navigate to the S-Store directory and restart the ssh service using the following commands:
 
 .. code-block:: bash
 
-	docker run s-store /bin/bash -c "service ssh restart && ant sstore-prepare -Dproject={BENCHMARK} && ant sstore-benchmark -Dproject={BENCHMARK}"
+	cd root/s-store
+	service ssh restart
 
-.. Note:: A good example benchmark to begin is votersstoreexample, which highlights the core functionalities available in S-Store.
-
-4. If you wish to run commands on S-Store in an interactive way, you will need to run two terminals.  In the first terminal, use:
+4. From there, you are free to run any benchmark available in the S-Store library.  By default, the benchmark votersstoreexample is precompiled and ready to run.  You can try running this using the following command:
 
 .. code-block:: bash
 
-	docker run --name sstore-console -it s-store /bin/bash
-	cd /root/s-store
-	service ssh restart && ant sstore-prepare -Dproject={BENCHMARK} && ant sstore-benchmark-console -Dproject={BENCHMARK}
+	ant sstore-benchmark -Dproject=votersstoreexample -Dclient.txnrate=1000
+
+This will run the votersstoreexample benchmark for 60 seconds, submitting 1000 new tuples per second.  You will also be able to run any other benchmark available in the S-Store library using the following commands:
+
+	ant sstore-prepare -Dproject={benchmark}
+	ant sstore-benchmark -Dproject={benchmark}
+
+.. Note:: From the Docker container, you will also be able to pull any changes from git and have access to all git commands.
+
+5. If you wish to run commands on S-Store in an interactive way, you will need to run two terminals.  Once you are running the sstore-container in the first terminal, run the following command in the first terminal:
+
+.. code-block:: bash
+
+	ant sstore-prepare -Dproject={BENCHMARK}
+	ant sstore-benchmark-console -Dproject={BENCHMARK}
 
 .. image:: images/sstore-console-docker.png
    :width: 1000px
@@ -51,8 +56,7 @@ Then, in a second terminal, you will need to connect to the running container.  
 
 .. code-block:: bash
 
-	docker ps -a
-	docker exec -it {CONTAINER-ID} /bin/bash
+	docker exec -it sstore-console /bin/bash
 	cd /root/s-store
 	./sstore {BENCHMARK}
 
@@ -60,16 +64,22 @@ Then, in a second terminal, you will need to connect to the running container.  
    :width: 1000px
    :align: center
 
-Once connected to this second terminal, you can run SQL statements in order to query the database.  There are also a variety of statistics tools available as well.
+Once connected to this second terminal, you can run SQL statements in order to query the database.  For instance, if running votersstoreexample, you could run the following SQL statement to retrieve the number of tuples in the Votes table:
 
-5. To clean up any existing docker containers that are no longer needed, simply run:
+.. code-block:: sql
+
+	SELECT COUNT(*) FROM votes;
+
+.. Note:: There are also a variety of statistics tools available as well.  Check the Statistics section for more details.
+
+6. To clean up any existing docker containers that are no longer needed, simply exit the running docker container by closing any running S-Store instances using ctrl+C.  Then, simply use the following commands to exit the running docker container and clean up container:
 
 .. code-block:: bash
 
-	docker ps -a
-	docker rm -f {CONTAINER-ID}
+	exit
+	./scripts/cleanup_containers.sh
 
-6. Some general docker commands that you might want to use:
+7. Some other general docker commands that you might want to use:
 
 List all images and detailed information:
 
@@ -77,7 +87,7 @@ List all images and detailed information:
 
 	docker images
 
-Check active and inactive containers and obtain containers'id:
+Check active and inactive containers and obtain any container's id:
 
 .. code-block:: bash
 
