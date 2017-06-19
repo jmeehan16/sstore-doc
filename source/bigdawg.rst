@@ -4,12 +4,24 @@
 Connecting S-Store to BigDAWG
 *****************************
 
-We demonstrate the connection of S-Store and BigDAWG with the S-Store benchmark mimic2bigdawg. In this configuration, S-Store is responsible for data ingestion. Benchmark mimic2bigdawg injects data into table medevents in S-Store, and S-Store periodically pushes data in medevents to table mimic2v26.medevents in Postgres. Analytical queries can be posted to BigDAWG. If mimic2v26.medevents is included in a query, BigDAWG will pull the data from S-Store first before executing the query in Postgres. This guarantees that the user always obtains the most fresh data injected into BigDAWG. We demonstrate this functionality by the dockerized BigDAWG and S-Store.
+What is BigDAWG?
+----------------
 
-Manual Setup
-------------
+BigDAWG is a research polystore system developed by Intel.  It supports heterogeneous database engines, multiple programming languages and complex analysis on a variety of workloads.  BigDAWG provides a single user interface for querying several systems, allowing a user to potentially request data from multiple systems within a single query.  It also contains the ability to easily and safely migrate data from one system to another.  More information on BigDAWG is available on the `BigDAWG website <http://bigdawg.mit.edu>`_
 
-Start a terminal. In the terminal, check out BigDAWG, switch to the sstore-injection branch, compile and execute.
+As a transactional streaming system, S-Store is able to serve several roles within BigDAWG.  It can be used as a main-memory relational engine, much like its parent system, H-Store.  It can be used as a pure streaming system.  Or, if used as a hybrid of the two, S-Store is able to serve as a streaming data ingestion engine, able to transform incoming data items as they arrive and then migrate them to the appropriate engine.
+
+Benchmark
+---------
+
+BigDAWG features a sample workload operating on the MIMIC II dataset.  We demonstrate the connection of S-Store and BigDAWG using the same dataset, with the S-Store benchmark mimic2bigdawg. In this configuration, S-Store is responsible for data ingestion into the polystore, specifically into Postgres. Benchmark mimic2bigdawg injects data into table medevents in S-Store, and S-Store periodically pushes data in medevents to table mimic2v26.medevents in Postgres. Analytical queries can be posted to BigDAWG. If mimic2v26.medevents is included in a query, BigDAWG will pull the data from S-Store first before executing the query in Postgres. This guarantees that the user always obtains the most fresh data injected into BigDAWG. We demonstrate this functionality by the dockerized BigDAWG and S-Store.
+
+Setting up BigDAWG via Docker
+-----------------------------
+
+Connecting S-Store to BigDAWG is easiest using Docker containers.  Starting a BigDAWG cluster is easy, and only requires access to the BigDAWG repository.  
+
+Start a terminal. In the terminal, check out BigDAWG, switch to the sstore-injection branch, compile and execute using the following commands:
 
 .. code-block:: bash
 
@@ -55,7 +67,7 @@ When BigDawg is started, it deletes the historical data in mimic2v26.medevents i
 Pulling data from S-Store
 -------------------------
 
-Data in a table is pulled from S-Store to Postgres for each SQL query that requires the table. Currently we support queries that require only one table a time from S-Store for transactional safety. The support for pulling multiple tables for one query is in progress.
+Data in a table is pulled from S-Store to Postgres for each SQL query that requires the table. Currently we support queries that require only one table a time from S-Store for transactional safety. The support for pulling multiple tables for one query is not yet provided, but is in progress.
 
 
 Pushing/Pulling data via Binanry Format
