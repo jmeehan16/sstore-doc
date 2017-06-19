@@ -48,11 +48,21 @@ This will run the votersstoreexample benchmark for 60 seconds, submitting 1000 n
 	ant sstore-prepare -Dproject={BENCHMARK}
 	ant sstore-benchmark-console -Dproject={BENCHMARK}
 
-.. image:: images/sstore-console-docker.png
-   :width: 1000px
-   :align: center
+.. code-block:: sh
 
-Then, in a second terminal, you will need to connect to the running container.  The container's ID can be obtained running "docker ps"
+  =============================
+  ===== Running containers=====
+  =============================
+  root@799e8144766d:/# cd root/s-store
+  root@799e8144766d:~/s-store# service ssh restart
+   * Restarting OpenBSD Secure Shell server sshd                                                                                start-stop-daemon: warning: failed to kill 11521: No such process                                                                                                                   [ OK ]
+  root@799e8144766d:~/s-store# ant sstore-benchmark-console -Dproject=votersstoreexample
+  Buildfile: /root/s-store/build.xml
+  
+  sstore-benchmark-console: ...
+
+
+Then, in a second terminal, you will need to connect to the running container using the following commands:
 
 .. code-block:: bash
 
@@ -60,15 +70,32 @@ Then, in a second terminal, you will need to connect to the running container.  
 	cd /root/s-store
 	./sstore {BENCHMARK}
 
-.. image:: images/sstore-docker-adhoc.png
-   :width: 1000px
-   :align: center
+.. code-block:: sh
+
+  docker exec -it sstore-console /bin/bash
+  root@799e8144766d:/# cd /root/s-store
+  root@799e8144766d:~/s-store# ./sstore votersstoreexample
+  00:05:36,016 [main] (ParametersUtil.java:165) WARN  - Failed to find ParameterMappingSet file 'votersstoreexample.mappings' in 'votersstoreexample.jar'
+   ___     ___ _____ ___  ___ ___
+  / __|___/ __|_   _/ _ \| _ \ __|
+  \__ \___\__ \ | || (_) |   / _|
+  |___/   |___/ |_| \___/|_|_\___|
+  
+  Connected to localhost:21212 / Server Version: 1.0.01
+
 
 Once connected to this second terminal, you can run SQL statements in order to query the database.  For instance, if running votersstoreexample, you could run the following SQL statement to retrieve the number of tuples in the Votes table:
 
-.. code-block:: sql
+.. code-block:: sh
 
-	SELECT COUNT(*) FROM votes;
+  sstore> SELECT COUNT(*) FROM VOTES;
+  Result #1 / 1
+    ??????
+    ? C1 ?
+    ? -- ?
+    ? 69 ?
+    ??????
+  1 row in set (0.55 sec)
 
 .. Note:: There are also a variety of statistics tools available as well.  Check the Statistics section for more details.
 
