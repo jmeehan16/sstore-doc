@@ -14,7 +14,7 @@ S-Store
 
    intro
    deploy
-   benchmarks
+   benchmarks-old
    engine
    streamgenerator
    bigdawg

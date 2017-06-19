@@ -48,6 +48,8 @@ This will run the votersstoreexample benchmark for 60 seconds, submitting 1000 n
 	ant sstore-prepare -Dproject={BENCHMARK}
 	ant sstore-benchmark-console -Dproject={BENCHMARK}
 
+For example, if the chosen benchmark is "votersstoreexample," the terminal will look roughly like this:
+
 .. code-block:: sh
 
   =============================
@@ -161,7 +163,7 @@ The S-Store source code can be downloaded from the Github repository using the f
 
 .. code-block:: bash
 
-	git clone http://github.com/s-store/sstore-soft.git
+	git clone http://github.com/s-store/s-store.git
 
 Once the code is downloaded and the desired branch selected, run the following command on the root directory of S-Store:
 

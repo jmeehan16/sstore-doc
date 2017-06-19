@@ -1,4 +1,4 @@
-.. _benchmarks:
+.. _benchmarks-old:
 
 ******************************************
 Writing Applications/Benchmarks in S-Store
