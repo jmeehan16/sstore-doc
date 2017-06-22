@@ -7,7 +7,7 @@ Connecting S-Store to BigDAWG
 What is BigDAWG?
 ----------------
 
-BigDAWG is a research polystore system developed by Intel.  It supports heterogeneous database engines, multiple programming languages and complex analysis on a variety of workloads.  BigDAWG provides a single user interface for querying several systems, allowing a user to potentially request data from multiple systems within a single query.  It also contains the ability to easily and safely migrate data from one system to another.  More information on BigDAWG is available on the `BigDAWG website <http://bigdawg.mit.edu>`_
+BigDAWG is a research polystore system developed by Intel.  It supports heterogeneous database engines, multiple programming languages and complex analysis on a variety of workloads.  BigDAWG provides a single user interface for querying several systems, allowing a user to potentially request data from multiple systems within a single query.  It also contains the ability to easily and safely migrate data from one system to another.  More information on BigDAWG is available on the `BigDAWG website <http://bigdawg.mit.edu>`_.
 
 As a transactional streaming system, S-Store is able to serve several roles within BigDAWG.  It can be used as a main-memory relational engine, much like its parent system, H-Store.  It can be used as a pure streaming system.  Or, if used as a hybrid of the two, S-Store is able to serve as a streaming data ingestion engine, able to transform incoming data items as they arrive and then migrate them to the appropriate engine.
 
