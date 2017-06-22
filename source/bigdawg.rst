@@ -34,11 +34,10 @@ Start a terminal. In the terminal, check out BigDAWG, switch to the sstore-injec
 
 S-Store ingests data in a rate of 100 tuples per second, for 10 minutes by default. After the ingestion is finished, S-Store stays online.
 
-Notes:
-
-1. BigDAWG only compiles in JDK 8.
-2. If BigDAWG is installed on Ubuntu, setup_bigdawg_docker.sh may reports errors during the setup of the BigDAWG catalog in Postgres. This is likely caused by Docker's default storage driver aufs. This can be fixed by `switching the storage driver to devicemapper <https://muehe.org/posts/switching-docker-from-aufs-to-devicemapper/>`_.
-3. If BigDAWG is installed on Mac, please compile and run the setup script in Docker Quickstart Terminal as described in `the BigDAWG documentation <http://bigdawg-documentation.readthedocs.io/en/latest/getting-started.html#bigdawg-cluster-setup-steps>`_.
+.. Note:: 
+    1. BigDAWG only compiles in JDK 8.
+    2. If BigDAWG is installed on Ubuntu, setup_bigdawg_docker.sh may reports errors during the setup of the BigDAWG catalog in Postgres. This is likely caused by Docker's default storage driver aufs. This can be fixed by `switching the storage driver to devicemapper <https://muehe.org/posts/switching-docker-from-aufs-to-devicemapper/>`_.
+    3. If BigDAWG is installed on Mac, please compile and run the setup script in Docker Quickstart Terminal as described in `the BigDAWG documentation <http://bigdawg-documentation.readthedocs.io/en/latest/getting-started.html#bigdawg-cluster-setup-steps>`_.
 
 Querying through BigDAWG/JDBC
 -----------------------------
@@ -61,7 +60,7 @@ The above query shows the amount of tuples in table mimic2v26.medevents in Postg
 Pushing data from S-Store to Postgres
 -------------------------------------
 
-When BigDawg is started, it deletes the historical data in mimic2v26.medevents in Postgres by dropping the table. Once S-Store comes alive, BigDawg recreates table mimic2v26.medevents in Postgres by the table definition in S-Store, and it starts to push data from S-Store to Postgres. Currently data is pushed from S-Store to Postgres on a time-based fashion only. The time between two pushes is defined in bigdawg/profiles/dev/dev-config.properties. The name of the entry is "sstore.injection.migrationGap", with the unit of millisecond, and is set to one minute (60000 milliseconds) by default, i.e., S-Store pushes data to Postgres once per minute.
+When BigDAWG is started, it deletes the historical data in mimic2v26.medevents in Postgres by dropping the table. Once S-Store comes alive, BigDAWG recreates table mimic2v26.medevents in Postgres by the table definition in S-Store, and it starts to push data from S-Store to Postgres. Currently data is pushed from S-Store to Postgres on a time-based fashion only. The time between two pushes is defined in bigdawg/profiles/dev/dev-config.properties. The name of the entry is "sstore.injection.migrationGap", with the unit of millisecond, and is set to one minute (60000 milliseconds) by default, i.e., S-Store pushes data to Postgres once per minute.
 
 
 Pulling data from S-Store
