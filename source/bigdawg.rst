@@ -37,7 +37,7 @@ S-Store ingests data in a rate of 100 tuples per second, for 10 minutes by defau
 Notes:
 
 1. BigDAWG only compiles in JDK 8.
-2. If BigDAWG is installed on Ubuntu, setup_bigdawg_docker.sh may reports errors during the setup of the BigDAWG catalog in Postgres. This is likely caused by Docker's storage driver aufs. This can be fixed by `switching the storage driver to devicemapper <https://muehe.org/posts/switching-docker-from-aufs-to-devicemapper/>`_.
+2. If BigDAWG is installed on Ubuntu, setup_bigdawg_docker.sh may reports errors during the setup of the BigDAWG catalog in Postgres. This is likely caused by Docker's default storage driver aufs. This can be fixed by `switching the storage driver to devicemapper <https://muehe.org/posts/switching-docker-from-aufs-to-devicemapper/>`_.
 3. If BigDAWG is installed on Mac, please compile and run the setup script in Docker Quickstart Terminal as described in `the BigDAWG documentation <http://bigdawg-documentation.readthedocs.io/en/latest/getting-started.html#bigdawg-cluster-setup-steps>`_.
 
 Querying through BigDAWG/JDBC
