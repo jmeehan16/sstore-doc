@@ -46,10 +46,10 @@ Below is a list of supported features in S-Store.  All features are directly imp
 **BIG DAWG:**
 
 - Query through JDBC: **SUPPORTED**
-- Connect to BigDAWG: **FUTURE RELEASE (COMING SOON)**
-- Query from BigDAWG: **FUTURE RELEASE (COMING SOON)**
-- Migrate data from S-Store to Postgres: **FUTURE RELEASE (COMING SOON)**
-- Migrate data from Postgres to S-Store: **FUTURE RELEASE (COMING SOON)**
+- Connect to BigDAWG: **SUPPORTED**
+- Query from BigDAWG: **SUPPORTED**
+- Migrate data from S-Store to Postgres: **SUPPORTED**
+- Migrate data from Postgres to S-Store: **SUPPORTED**
 
 **STATISTICS:**
 
